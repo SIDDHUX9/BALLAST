@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, parseAbi, parseEther, formatUnits } from 'viem';
+import { createWalletClient, createPublicClient, http, formatUnits } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { MEZO_TESTNET_ADDRESSES } from '../packages/shared/src/protocol.js';
 
@@ -7,13 +7,17 @@ const privateKey = (process.env.TEST_PRIVATE_KEY as `0x${string}`) || generatePr
 const account = privateKeyToAccount(privateKey);
 
 const client = createPublicClient({
-  transport: http('https://rpc.test.mezo.org')
+  transport: http('https://rpc.test.mezo.org'),
 });
 
-const wallet = createWalletClient({
+const _wallet = createWalletClient({
   account,
-  transport: http('https://rpc.test.mezo.org')
+  transport: http('https://rpc.test.mezo.org'),
 });
+
+// Suppress unused warning while keeping reference to verified addresses
+void MEZO_TESTNET_ADDRESSES;
+void _wallet;
 
 async function main() {
   console.log('=== Ballast Empirical Trove Lifecycle ===\n');
