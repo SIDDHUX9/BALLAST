@@ -1,0 +1,15 @@
+{
+  "name": "ballast-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "recon": "tsx scripts/recon.ts",
+    "trove-lifecycle": "tsx scripts/trove-lifecycle.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.57"
+  }
+}

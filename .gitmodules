@@ -1,0 +1,3 @@
+[submodule "vendor/musd"]
+	path = vendor/musd
+	url = https://github.com/mezo-org/musd

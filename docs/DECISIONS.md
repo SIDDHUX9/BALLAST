@@ -8,7 +8,51 @@ This document records architectural and technical decisions made for **Ballast**
 
 | ID | Title | Status | Date | Decision Maker |
 |---|---|---|---|---|
-| *None yet* | *No decisions recorded yet* | — | — | — |
+| [ADR-0001](#adr-0001-per-user-minimal-proxy-vault-owns-trove-architecture) | Per-User Minimal Proxy Vault-Owns-Trove Architecture | Accepted | 2026-10-19 | Lead Engineer |
+
+---
+
+## ADR-0001: Per-User Minimal Proxy Vault-Owns-Trove Architecture
+
+### Status
+Accepted
+
+### Date
+2026-10-19
+
+### Context & Problem Statement
+To provide automated liquidation and redemption protection on the Mezo network, an off-chain keeper must be able to deploy pre-funded reserves (MUSD debt repayment and/or BTC collateral top-up) when a borrower's Individual Collateral Ratio (ICR) drops below a safety threshold.
+
+Our protocol reconnaissance of Mezo's `vendor/musd` contracts revealed that:
+1. `BorrowerOperations.sol` (L796-802) strictly enforces `msg.sender == _borrower` for `openTrove`, `adjustTrove`, `addColl`, `repayMUSD`, and `closeTrove`. There is no operator approval registry (`approveOperator` or `setApprovalForAll`).
+2. The only remote invocation contract, `BorrowerOperationsSignatures.sol`, uses EIP-712 typed signatures with strictly sequential nonces (`nonces[_borrower]++`). If a borrower pre-signs defense transactions, any manual user transaction or other signed operation invalidates the nonce, and pre-signed amounts cannot adapt to dynamic interest accrual or price swings.
+
+### Decision
+1. **Per-User Vault Architecture**: Deploy a dedicated `BallastVault` contract for each user via `BallastFactory`. The vault itself is the on-chain owner of the MUSD trove (`msg.sender` to `BorrowerOperations`).
+2. **EIP-1167 Minimal Clones with CREATE2**: Use OpenZeppelin `Clones.cloneDeterministic` to deploy minimal proxies cheaply, with deterministic addresses derived from `keccak256(abi.encode(owner))`.
+3. **Immutable Target Protocols**: Fix the verified Mezo MUSD contracts (`BorrowerOperations`, `TroveManager`, `PriceFeed`, `MUSD`) as immutables in the shared `BallastVault` implementation contract.
+4. **Trustless & Autonomous Governance**: `BallastFactory` has no admin keys, no pause functions, no fee extraction mechanisms, and is non-upgradeable.
+5. **Separate Tracked Reserves**: Track `musdReserve` and `btcReserve` explicitly in state storage, decoupling defense funds from raw balances so stray token transfers or external donations cannot manipulate state. Non-reserve tokens can be rescued by the owner via `sweep()`.
+6. **Caller Tip Incentive**: Keepers are rewarded directly from the defense transaction via a bounded fee (`maxTipBps` $\le 100$ bps) on value moved.
+
+### Consequences
+#### Positive
+- Enables completely permissionless, autonomous keeper defense without requiring pre-signed nonces or user presence during market crashes.
+- Clean isolation of funds: each borrower's defense reserve is isolated in their own proxy; a flaw in one user's configuration cannot affect any other user's reserves or position.
+- Minimal deployment gas cost (~45,000 gas per clone).
+- Transparent, trustless design: no protocol owner can freeze funds, change logic, or extract fees.
+
+#### Negative / Trade-offs
+- Users must manage their trove through their `BallastVault` rather than interacting directly with Mezo's native UI contracts.
+- An existing EOA-owned trove cannot be retroactively defended without closing or migrating it into a `BallastVault`.
+
+### Risks & Mitigations
+- **Native BTC Refunds**: When closing a trove or withdrawing collateral, Mezo's `ActivePool` and `CollSurplusPool` send native BTC via low-level `.call{value: ...}("")`. The `BallastVault` implements `receive() external payable` and automatically forwards refunds to the owner.
+- **Min Net Debt Boundary**: In Mezo MUSD, debt cannot be reduced into the $(0, 1800\text{ MUSD})$ range. Defense formulas clamp repayments to preserve $\ge 1,800$ MUSD net debt or pivot to collateral additions.
+
+### Verification
+- Foundry fork tests validating factory clone prediction, proxy deployment, trove lifecycle through the vault, and keeper defense triggers under simulated oracle price drops.
+- Static analysis (Slither) and zero-mock invariant testing.
 
 ---
 
