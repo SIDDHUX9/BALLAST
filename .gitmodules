@@ -1,3 +1,10 @@
 [submodule "vendor/musd"]
 	path = vendor/musd
 	url = https://github.com/mezo-org/musd
+[submodule "packages/contracts/lib/openzeppelin-contracts"]
+	path = packages/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts.git
+	branch = v5.2.0
+[submodule "packages/contracts/lib/forge-std"]
+	path = packages/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std.git

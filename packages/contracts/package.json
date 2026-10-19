@@ -1,0 +1,16 @@
+{
+  "name": "@ballast/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test",
+    "fork-test": "forge test --fork-url https://rpc.test.mezo.org",
+    "fmt": "forge fmt",
+    "lint": "solhint \"src/**/*.sol\"",
+    "slither": "slither ."
+  },
+  "devDependencies": {
+    "solhint": "^5.0.3"
+  }
+}
