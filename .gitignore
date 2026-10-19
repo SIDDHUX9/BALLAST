@@ -17,6 +17,8 @@ cache/
 artifacts/
 typechain/
 typechain-types/
+.next/
+*.tsbuildinfo
 
 # Testing and Coverage
 coverage/

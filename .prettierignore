@@ -1,0 +1,10 @@
+node_modules
+vendor
+.next
+dist
+build
+out
+coverage
+packages/shared/abis
+packages/contracts/lib
+pnpm-lock.yaml

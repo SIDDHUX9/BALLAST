@@ -1,6 +1,7 @@
 # Protocol Reconnaissance: Mezo MUSD
 
 This document contains ground-truth, verified protocol findings for Mezo's **MUSD** system derived directly from:
+
 1. Solidity source code in `vendor/musd` (git submodule, commit reference).
 2. Deployment artifacts in `vendor/musd/solidity/artifacts/deployments/matsnet`.
 3. Live on-chain verification on Mezo Testnet ("Matsnet", Chain ID `31611`) via RPC `https://rpc.test.mezo.org`.
@@ -14,27 +15,28 @@ This document contains ground-truth, verified protocol findings for Mezo's **MUS
 
 ### External Function Signatures & Mutability
 
-| Function Signature | Mutability | Payable? | Trove Owner Determination | Code Reference |
-|---|---|---|---|---|
-| `openTrove(uint256 _debtAmount, address _upperHint, address _lowerHint)` | `external payable` | **YES** | `msg.sender` | `BorrowerOperations.sol` L180-186 |
-| `adjustTrove(uint256 _collWithdrawal, uint256 _debtChange, bool _isDebtIncrease, address _upperHint, address _lowerHint)` | `external payable` | **YES** | `msg.sender` | `BorrowerOperations.sol` L296-313 |
-| `addColl(address _upperHint, address _lowerHint)` | `external payable` | **YES** | `msg.sender` | `BorrowerOperations.sol` L189-203 |
-| `withdrawColl(uint256 _amount, address _upperHint, address _lowerHint)` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L225-240 |
-| `withdrawMUSD(uint256 _amount, address _upperHint, address _lowerHint)` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L243-258 |
-| `repayMUSD(uint256 _amount, address _upperHint, address _lowerHint)` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L261-276 |
-| `closeTrove()` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L278-280 |
-| `refinance(address _upperHint, address _lowerHint)` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L282-287 |
-| `claimCollateral()` | `external` | NO | `msg.sender` | `BorrowerOperations.sol` L316-318 |
-| `moveCollateralGainToTrove(address _borrower, address _upperHint, address _lowerHint)` | `external payable` | **YES** | `_borrower` (Caller MUST be StabilityPool) | `BorrowerOperations.sol` L206-222 |
-| `restrictedOpenTrove(address _borrower, address _recipient, uint256 _debtAmount, address _upperHint, address _lowerHint)` | `external payable` | **YES** | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L447-456 |
-| `restrictedAdjustTrove(address _borrower, address _recipient, address _caller, uint256 _collWithdrawal, uint256 _mUSDChange, bool _isDebtIncrease, address _upperHint, address _lowerHint)` | `external payable` | **YES** | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L476-497 |
-| `restrictedCloseTrove(address _borrower, address _caller, address _recipient)` | `external` | NO | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L458-465 |
-| `restrictedRefinance(address _borrower, address _upperHint, address _lowerHint)` | `external` | NO | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L467-474 |
-| `restrictedClaimCollateral(address _borrower, address _recipient)` | `external` | NO | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L439-445 |
+| Function Signature                                                                                                                                                                          | Mutability         | Payable? | Trove Owner Determination                                   | Code Reference                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------- | ----------------------------------------------------------- | --------------------------------- |
+| `openTrove(uint256 _debtAmount, address _upperHint, address _lowerHint)`                                                                                                                    | `external payable` | **YES**  | `msg.sender`                                                | `BorrowerOperations.sol` L180-186 |
+| `adjustTrove(uint256 _collWithdrawal, uint256 _debtChange, bool _isDebtIncrease, address _upperHint, address _lowerHint)`                                                                   | `external payable` | **YES**  | `msg.sender`                                                | `BorrowerOperations.sol` L296-313 |
+| `addColl(address _upperHint, address _lowerHint)`                                                                                                                                           | `external payable` | **YES**  | `msg.sender`                                                | `BorrowerOperations.sol` L189-203 |
+| `withdrawColl(uint256 _amount, address _upperHint, address _lowerHint)`                                                                                                                     | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L225-240 |
+| `withdrawMUSD(uint256 _amount, address _upperHint, address _lowerHint)`                                                                                                                     | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L243-258 |
+| `repayMUSD(uint256 _amount, address _upperHint, address _lowerHint)`                                                                                                                        | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L261-276 |
+| `closeTrove()`                                                                                                                                                                              | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L278-280 |
+| `refinance(address _upperHint, address _lowerHint)`                                                                                                                                         | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L282-287 |
+| `claimCollateral()`                                                                                                                                                                         | `external`         | NO       | `msg.sender`                                                | `BorrowerOperations.sol` L316-318 |
+| `moveCollateralGainToTrove(address _borrower, address _upperHint, address _lowerHint)`                                                                                                      | `external payable` | **YES**  | `_borrower` (Caller MUST be StabilityPool)                  | `BorrowerOperations.sol` L206-222 |
+| `restrictedOpenTrove(address _borrower, address _recipient, uint256 _debtAmount, address _upperHint, address _lowerHint)`                                                                   | `external payable` | **YES**  | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L447-456 |
+| `restrictedAdjustTrove(address _borrower, address _recipient, address _caller, uint256 _collWithdrawal, uint256 _mUSDChange, bool _isDebtIncrease, address _upperHint, address _lowerHint)` | `external payable` | **YES**  | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L476-497 |
+| `restrictedCloseTrove(address _borrower, address _caller, address _recipient)`                                                                                                              | `external`         | NO       | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L458-465 |
+| `restrictedRefinance(address _borrower, address _upperHint, address _lowerHint)`                                                                                                            | `external`         | NO       | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L467-474 |
+| `restrictedClaimCollateral(address _borrower, address _recipient)`                                                                                                                          | `external`         | NO       | `_borrower` (Caller MUST be `BorrowerOperationsSignatures`) | `BorrowerOperations.sol` L439-445 |
 
 ### How Trove Ownership is Determined
 
 In every standard borrower operation (`openTrove`, `adjustTrove`, `addColl`, `repayMUSD`, `withdrawColl`, `withdrawMUSD`, `closeTrove`, `refinance`), the trove owner is strictly hardcoded to `msg.sender`:
+
 ```solidity
 // BorrowerOperations.sol lines 184-186
 function openTrove(uint256 _debtAmount, address _upperHint, address _lowerHint) external payable override {
@@ -56,6 +58,7 @@ function addColl(address _upperHint, address _lowerHint) external payable overri
 **Rigorously: NO, not without a freshly signed EIP-712 signature for each specific execution.**
 
 In `BorrowerOperations.sol`, lines 796-802 strictly guard trove adjustments:
+
 ```solidity
 /*
  * Confirm the operation is either a borrower adjusting their own trove (either directly or through
@@ -71,24 +74,29 @@ assert(
 ```
 
 The only alternative entrypoint is `BorrowerOperationsSignatures.sol`:
+
 - `addCollWithSignature(...)` (L269-301)
 - `adjustTroveWithSignature(...)` (L330-377)
 - `repayMUSDWithSignature(...)` (L503-537)
 - `closeTroveWithSignature(...)` (L303-328)
 
 However, `BorrowerOperationsSignatures` enforces:
+
 1. **Sequential Nonces**: `mapping(address => uint256) private nonces` (`BorrowerOperationsSignatures.sol` L141, L626). Each signature consumes `nonces[_borrower]++`.
 2. **Strict Expiry & Replay**: Signatures require `block.timestamp <= deadline` and commit to exact parameters (`assetAmount`, `debtChange`, `nonce`, `deadline`).
 3. **No Operator Approvals**: There is no `setApprovalForAll`, `approveOperator`, or allowance-based delegation anywhere in Mezo's MUSD contracts.
 
 ### Trust & Feasibility Implications for Keepers
+
 If an automated keeper were to rely on `BorrowerOperationsSignatures`:
+
 - The user would have to pre-sign transactions for specific debt/collateral amounts.
-- If the user touches their trove or performs *any* signed action, the nonce increments, invalidating all pre-signed defense signatures.
+- If the user touches their trove or performs _any_ signed action, the nonce increments, invalidating all pre-signed defense signatures.
 - If the required defense amount changes (due to BTC price movement or interest accrual), a pre-signed signature with a fixed amount either under-defends or fails.
 - Therefore, off-chain pre-signed signatures are unusable for autonomous, dynamic keeper defense.
 
 ### Architectural Conclusion
+
 Because native delegation does not exist, **the per-user vault-owns-trove pattern is strictly required**. Each borrower deploys a `BallastVault`, and that vault contract acts as `msg.sender` to `BorrowerOperations`.
 
 ---
@@ -99,7 +107,9 @@ Because native delegation does not exist, **the per-user vault-owns-trove patter
 **Interface**: `vendor/musd/solidity/contracts/interfaces/ITroveManager.sol`
 
 ### Trove Status Enum
+
 `ITroveManager.sol` L10-16:
+
 ```solidity
 enum Status {
     nonExistent,         // 0
@@ -111,6 +121,7 @@ enum Status {
 ```
 
 ### Views & Debt Queries
+
 1. **`getCurrentICR(address _borrower, uint256 _price)`** (`TroveManager.sol` L736-750):
    - Computes current Individual Collateral Ratio in 1e18 precision ($1e18 = 100\%$).
    - Calls `_getCurrentTroveAmounts(_borrower)`, which includes:
@@ -150,23 +161,29 @@ enum Status {
 **Files**: `vendor/musd/solidity/contracts/HintHelpers.sol`, `vendor/musd/solidity/contracts/SortedTroves.sol`
 
 ### NICR Ordering
+
 Troves are stored in `SortedTroves` ordered descending by Nominal Individual Collateral Ratio:
 $$\text{NICR} = \frac{\text{collateral} \times 1e20}{\text{debt}}$$
 
 ### Off-Chain Hint Computation
+
 1. Compute `NICR = (coll * 1e20) / debt`.
 2. Call `HintHelpers.getApproxHint(NICR, numTrials, randomSeed)` to obtain an approximate address $O(\sqrt{N})$ positions away.
 3. Call `SortedTroves.findInsertPosition(NICR, approxAddress, approxAddress)` to get the exact `(upperHint, lowerHint)`.
 
 ### Zero-Address Hints Behavior
+
 `SortedTroves.sol` lines 440-442:
+
 ```solidity
 if (prevId == address(0) && nextId == address(0)) {
     // No hint - descend list starting from head
     return _descendList(_troveManager, _NICR, data.head);
 }
 ```
+
 If `upperHint = address(0)` and `lowerHint = address(0)`:
+
 - `SortedTroves` will linearly scan from the list head down to find the correct insertion point.
 - **For small trove sets (such as on testnet with 258 troves), zero hints succeed on-chain** but consume more gas ($O(N)$ SLOADs).
 - For production, calculating hints off-chain avoids gas waste and potential out-of-gas limits.
@@ -175,25 +192,28 @@ If `upperHint = address(0)` and `lowerHint = address(0)`:
 
 ## 6. System Constants & Governance Rules
 
-| Parameter | Value | Precision | Configurable? | Reference |
-|---|---|---|---|---|
-| **MCR** | 110% (`1.1e18`) | 1e18 | Constant | `LiquityBase.sol` L22 |
-| **CCR** | 150% (`1.5e18`) | 1e18 | Constant | `LiquityBase.sol` L25 |
-| **Gas Compensation** | 200 MUSD (`200e18`) | 1e18 | Constant | `LiquityBase.sol` L28 |
-| **Min Net Debt** | 1,800 MUSD (`1800e18`) | 1e18 | Governable ($\ge 50$ MUSD) | `BorrowerOperations.sol` L97, L144 |
-| **Borrowing Rate** | 0.1% (`1e15` = 0.001e18) | 1e18 | Governable | `BorrowerOperations.sol` L146 |
-| **Redemption Rate** | Dynamically governed | 1e18 | Governable | `BorrowerOperations.sol` L129 |
-| **Refinancing Fee** | 20% of borrowing fee | Percent | Governable | `BorrowerOperations.sol` L143 |
-| **Interest Rate Model** | Fixed per trove upon open | Basis points | Governable globally | `InterestRateManager.sol` L88 |
+| Parameter               | Value                     | Precision    | Configurable?              | Reference                          |
+| ----------------------- | ------------------------- | ------------ | -------------------------- | ---------------------------------- |
+| **MCR**                 | 110% (`1.1e18`)           | 1e18         | Constant                   | `LiquityBase.sol` L22              |
+| **CCR**                 | 150% (`1.5e18`)           | 1e18         | Constant                   | `LiquityBase.sol` L25              |
+| **Gas Compensation**    | 200 MUSD (`200e18`)       | 1e18         | Constant                   | `LiquityBase.sol` L28              |
+| **Min Net Debt**        | 1,800 MUSD (`1800e18`)    | 1e18         | Governable ($\ge 50$ MUSD) | `BorrowerOperations.sol` L97, L144 |
+| **Borrowing Rate**      | 0.1% (`1e15` = 0.001e18)  | 1e18         | Governable                 | `BorrowerOperations.sol` L146      |
+| **Redemption Rate**     | Dynamically governed      | 1e18         | Governable                 | `BorrowerOperations.sol` L129      |
+| **Refinancing Fee**     | 20% of borrowing fee      | Percent      | Governable                 | `BorrowerOperations.sol` L143      |
+| **Interest Rate Model** | Fixed per trove upon open | Basis points | Governable globally        | `InterestRateManager.sol` L88      |
 
 ### Interest Rate Accrual Mechanics
+
 - When a trove is opened, its `interestRate` is set to `interestRateManager.interestRate()` (e.g., 100 bps = 1.00% APR).
 - This rate is **fixed for the life of the trove** unless the owner calls `refinance()`.
 - Interest accrues per-second on the principal:
   $$\text{interest} = \frac{\Delta t \times \text{principal} \times \text{interestRate}}{10000 \times 31536000}$$
 
 ### Recovery Mode Rules (`TCR < CCR = 150%`)
+
 In `BorrowerOperations.sol` L1257-1275:
+
 - **No collateral withdrawals** permitted (`_requireNoCollWithdrawal`).
 - Pure collateral top-up is permitted.
 - Pure debt repayment is permitted.
@@ -204,6 +224,7 @@ In `BorrowerOperations.sol` L1257-1275:
 ## 7. Lifecycle Transitions: Liquidation & Redemption
 
 ### Liquidation (`ICR < 110%`)
+
 - **Action**: Any user calls `TroveManager.liquidate(borrower)` or `batchLiquidateTroves(borrowers)`.
 - **Trove Status**: Set to `Status.closedByLiquidation` (`TroveManager.sol` L1101).
 - **Collateral Distribution**:
@@ -216,6 +237,7 @@ In `BorrowerOperations.sol` L1257-1275:
   - `event Liquidation(...)`
 
 ### Partial Redemption (Lowest ICR Troves First)
+
 - **Action**: MUSD holder calls `TroveManager.redeemCollateral(amount, ...)`.
 - **Trove Status**: Remains `Status.active`.
 - **Debt & Collateral**: Debt reduced by redeemed MUSD; collateral reduced by equivalent USD value ($\text{collDrawn} = \frac{\text{mUSDLot} \times 1e18}{\text{price}}$).
@@ -224,6 +246,7 @@ In `BorrowerOperations.sol` L1257-1275:
   - `event TroveUpdated(address indexed _borrower, principal, interest, coll, stake, rate, time, uint8 operation)` (`operation = 1`)
 
 ### Full Redemption
+
 - **Action**: Redemption clears entire net debt down to `MUSD_GAS_COMPENSATION` (200 MUSD).
 - **Trove Status**: Set to `Status.closedByRedemption` (`TroveManager.sol` L1261).
 - **Surplus Collateral**: Remaining collateral moved to `CollSurplusPool`, claimable by borrower via `claimCollateral()` (`TroveManager.sol` L1193-1200).
@@ -254,6 +277,7 @@ In `BorrowerOperations.sol` L1257-1275:
 ## 9. Live On-Chain Verified Facts (Mezo Testnet / Matsnet)
 
 Verified via `scripts/recon.ts` against RPC `https://rpc.test.mezo.org` at block timestamp:
+
 - **Chain ID**: `31611` (`0x7b7b`)
 - **MUSD Address**: `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` (Decimals: `18`, Name: `Mezo USD`, Symbol: `MUSD`)
 - **TroveManager Address**: `0xE47c80e8c23f6B4A1aE41c34837a0599D5D16bb0`
@@ -277,7 +301,9 @@ Verified via `scripts/recon.ts` against RPC `https://rpc.test.mezo.org` at block
 ## 10. Architecture Implication
 
 ### Core Architectural Decision: The Per-User Vault Pattern
+
 Can a third-party keeper repay or add collateral to a user's trove natively?
+
 - **No**. As proven by `BorrowerOperations.sol` line 796, caller validation strictly requires `msg.sender == _borrower`.
 - The only delegated execution mechanism requires per-operation EIP-712 ECDSA signatures with sequential nonces, which cannot support uncoordinated autonomous keepers.
 - **Therefore, Ballast MUST implement the per-user vault-owns-trove pattern (`BallastVault`)**:

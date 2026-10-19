@@ -2,9 +2,10 @@
 
 ## 1. Overview & Architecture
 
-**Ballast** is an autonomous, non-custodial liquidation and redemption guardian for Bitcoin-backed MUSD troves on the Mezo network. 
+**Ballast** is an autonomous, non-custodial liquidation and redemption guardian for Bitcoin-backed MUSD troves on the Mezo network.
 
 Because Mezo's `BorrowerOperations.sol` (lines 796-802) strictly enforces `msg.sender == _borrower` and provides no approved operator delegation mechanism, Ballast utilizes a **per-user vault architecture**:
+
 - `BallastFactory`: An immutable, trustless factory that deploys one minimal proxy `BallastVault` per owner using EIP-1167 (via OpenZeppelin `Clones.cloneDeterministic` with CREATE2).
 - `BallastVault`: A lightweight proxy contract owned by the borrower that serves as the on-chain owner of exactly one MUSD trove, stores two defense reserves (MUSD and native BTC), and permits permissionless keeper defense execution when pre-configured safety rules are met.
 
@@ -48,15 +49,18 @@ Because Mezo's `BorrowerOperations.sol` (lines 796-802) strictly enforces `msg.s
 ## 2. Factory Contract: `BallastFactory`
 
 ### Responsibilities
+
 1. Predict deterministic vault addresses for any owner address (`predictVault(address owner)`).
 2. Deploy the user's `BallastVault` via `CREATE2` and initialize it with `owner`.
 3. Track deployed vaults via `vaultOf(address owner)`.
 4. Ensure strictly zero governance privileges: no admin, no pause, no fees, non-upgradeable.
 
 ### Salt Derivation
+
 $$\text{salt} = \text{keccak256}(\text{abi.encode}(\text{owner}))$$
 
 ### Events
+
 - `event VaultCreated(address indexed owner, address indexed vault);`
 
 ---
@@ -64,6 +68,7 @@ $$\text{salt} = \text{keccak256}(\text{abi.encode}(\text{owner}))$$
 ## 3. Vault Contract: `BallastVault`
 
 ### State & Storage Layout
+
 Each `BallastVault` minimal proxy holds isolated user state:
 
 ```solidity
@@ -83,7 +88,9 @@ uint256 public btcReserve;
 ```
 
 ### Immutables in Implementation Contract
+
 To eliminate SLOAD gas overhead, all Mezo protocol targets are defined as `immutable` in the shared `BallastVault` implementation:
+
 - `IBorrowerOperationsMinimal public immutable borrowerOperations;`
 - `ITroveManagerMinimal public immutable troveManager;`
 - `IPriceFeedMinimal public immutable priceFeed;`
@@ -97,7 +104,9 @@ To eliminate SLOAD gas overhead, all Mezo protocol targets are defined as `immut
 All calculations use 18-decimal fixed-point arithmetic ($1e18 = 100\%$).
 
 ### 4.1 Individual Collateral Ratio (ICR)
+
 $$\text{ICR} = \frac{\text{collateral} \times \text{price}}{\text{debt}}$$
+
 - **Units**:
   - $\text{collateral}$: wei of native BTC ($10^{18}$ wei = 1 BTC).
   - $\text{price}$: wei of USD per BTC ($10^{18}$ wei = $1.00 USD).
@@ -105,6 +114,7 @@ $$\text{ICR} = \frac{\text{collateral} \times \text{price}}{\text{debt}}$$
 - **Rounding Rule**: When evaluating whether $\text{ICR} < \text{triggerICR}$, round **DOWN** ($\lfloor \dots \rfloor$). This is conservative and ensures protection triggers immediately if on the boundary.
 
 ### 4.2 Debt Repayment Needed to Reach Target ICR
+
 To achieve $\text{targetICR}$ via debt reduction:
 $$\text{targetDebt} = \left\lfloor \frac{\text{collateral} \times \text{price}}{\text{targetICR}} \right\rfloor$$
 $$\text{idealRepay} = \begin{cases} \text{debt} - \text{targetDebt} & \text{if } \text{debt} > \text{targetDebt} \\ 0 & \text{otherwise} \end{cases}$$
@@ -112,8 +122,10 @@ $$\text{idealRepay} = \begin{cases} \text{debt} - \text{targetDebt} & \text{if }
 - **Rounding Rule**: Round `idealRepay` **UP** ($\lceil \dots \rceil$) so that after repayment, the resulting ICR is strictly $\ge \text{targetICR}$.
 
 ### 4.3 Min Net Debt Boundary Clamping
+
 In Mezo MUSD, net debt cannot fall in the range $(0, \text{minNetDebt})$ where $\text{minNetDebt} = 1,800\text{ MUSD}$.
 Let $\text{netDebt} = \text{debt} - \text{MUSD\_GAS\_COMPENSATION}$.
+
 1. If $\text{netDebt} \le \text{minNetDebt}$:
    - No debt repayment is permitted ($\text{musdToRepay} = 0$).
    - The entire defense must be executed via BTC collateral addition.
@@ -124,6 +136,7 @@ Let $\text{netDebt} = \text{debt} - \text{MUSD\_GAS\_COMPENSATION}$.
      $$\text{musdToRepay} = \min(\text{idealRepay}, \text{maxLegalRepay}, \text{musdReserve})$$
 
 ### 4.4 Collateral Addition Needed to Reach Target ICR
+
 If debt repayment alone cannot reach $\text{targetICR}$ (e.g. MUSD reserve depleted, or clamped by `minNetDebt`):
 Let $\text{remainingDebt} = \text{debt} - \text{musdToRepay}$.
 $$\text{requiredCollateral} = \left\lceil \frac{\text{targetICR} \times \text{remainingDebt}}{\text{price}} \right\rceil$$
@@ -133,9 +146,11 @@ $$\text{btcToAdd} = \min(\text{idealBtcToAdd}, \text{btcReserve})$$
 - **Rounding Rule**: Round `requiredCollateral` **UP** ($\lceil \dots \rceil$) so the final ICR strictly satisfies $\ge \text{targetICR}$.
 
 ### 4.5 Keeper Tip Calculation
+
 Keepers receive an incentive tip paid in the asset moved:
 $$\text{musdTip} = \left\lfloor \frac{\text{musdToRepay} \times \text{maxTipBps}}{10000} \right\rfloor$$
 $$\text{btcTip} = \left\lfloor \frac{\text{btcToAdd} \times \text{maxTipBps}}{10000} \right\rfloor$$
+
 - **Rounding Rule**: Round tips **DOWN** ($\lfloor \dots \rfloor$) to ensure the tip never exceeds the owner's configured `maxTipBps` cap.
 - **Tip Source**:
   - `musdTip` is deducted from available MUSD reserve or paid alongside the defense.
@@ -188,6 +203,7 @@ Caller (Keeper)
 ## 6. Validation Rules & Justification
 
 ### Rule Parameters
+
 1. **`triggerICR`**:
    - **Protocol Constraint**: Mezo MCR is 110% (`1.10e18`).
    - **Safety Margin Justification**: Oracle heartbeat is 60 seconds (`MAX_PRICE_DELAY = 60`). During high-volatility Bitcoin drawdowns, BTC can drop 2-5% within seconds. A trigger set below 112% risks liquidation occurring before a keeper transaction confirms.
@@ -204,20 +220,20 @@ Caller (Keeper)
 
 ## 7. Edge Cases & Protocol Interactions
 
-| Edge Case | Protocol Condition | Vault Behavior |
-|---|---|---|
-| **Trove liquidated** | Status = `closedByLiquidation` | `defend()` and `checkDefense()` revert with `TroveNotActive`. Keeper ignores position. |
-| **Trove redeemed fully** | Status = `closedByRedemption` | `defend()` reverts with `TroveNotActive`. Owner calls `claimCollateral()` through vault to recover surplus BTC. |
-| **Trove redeemed partially** | ICR shifted dynamically | `checkDefense()` recalculates against latest reduced debt/collateral. Defense executes normally if ICR < trigger. |
-| **Reserves empty** | `musdReserve == 0 && btcReserve == 0` | `checkDefense()` returns `defendable = false`. `defend()` reverts with `InsufficientReserves`. |
-| **Reserves cover only part** | Partial defense | Partial defense executes. Post-defense check verifies $\text{newICR} > \text{oldICR}$. Reverts only if unable to improve ICR. |
-| **Debt drops below minimum** | $\text{netDebt} - \text{repay} < 1800\text{ MUSD}$ | Repay amount is clamped to leave $\ge 1,800$ MUSD net debt. Deficit is satisfied via BTC reserve addition. |
-| **Two keepers racing** | First tx defends position | Second tx reads $\text{currentICR} \ge \text{triggerICR}$ and cleanly reverts with `ICRNotDefendable`. |
-| **Owner updates rule in same block** | `setRule()` called | Next tx in block evaluates new rule parameters. If disabled, defense reverts. |
-| **Reentrancy via native BTC** | Keeper / owner fallback calls | All state changes precede external calls (Checks-Effects-Interactions) + OpenZeppelin `ReentrancyGuard`. |
-| **Tip griefing** | Keeper calls repeatedly | Each call strictly requires $\text{ICR} < \text{triggerICR}$ and must raise ICR. Once defended, ICR is above trigger and cannot be called again until price drops. |
-| **Smart contract owner (Mezo Passport)** | Owner is contract without EOA | All owner transfers use `.call{value: ...}("")` with 100k gas buffer. No `tx.origin` checks anywhere. |
-| **Dust amounts** | Small residual shortfall | If required defense value is $< 1000$ wei, calculation clamps or handles gracefully without precision reversion. |
+| Edge Case                                | Protocol Condition                                 | Vault Behavior                                                                                                                                                     |
+| ---------------------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Trove liquidated**                     | Status = `closedByLiquidation`                     | `defend()` and `checkDefense()` revert with `TroveNotActive`. Keeper ignores position.                                                                             |
+| **Trove redeemed fully**                 | Status = `closedByRedemption`                      | `defend()` reverts with `TroveNotActive`. Owner calls `claimCollateral()` through vault to recover surplus BTC.                                                    |
+| **Trove redeemed partially**             | ICR shifted dynamically                            | `checkDefense()` recalculates against latest reduced debt/collateral. Defense executes normally if ICR < trigger.                                                  |
+| **Reserves empty**                       | `musdReserve == 0 && btcReserve == 0`              | `checkDefense()` returns `defendable = false`. `defend()` reverts with `InsufficientReserves`.                                                                     |
+| **Reserves cover only part**             | Partial defense                                    | Partial defense executes. Post-defense check verifies $\text{newICR} > \text{oldICR}$. Reverts only if unable to improve ICR.                                      |
+| **Debt drops below minimum**             | $\text{netDebt} - \text{repay} < 1800\text{ MUSD}$ | Repay amount is clamped to leave $\ge 1,800$ MUSD net debt. Deficit is satisfied via BTC reserve addition.                                                         |
+| **Two keepers racing**                   | First tx defends position                          | Second tx reads $\text{currentICR} \ge \text{triggerICR}$ and cleanly reverts with `ICRNotDefendable`.                                                             |
+| **Owner updates rule in same block**     | `setRule()` called                                 | Next tx in block evaluates new rule parameters. If disabled, defense reverts.                                                                                      |
+| **Reentrancy via native BTC**            | Keeper / owner fallback calls                      | All state changes precede external calls (Checks-Effects-Interactions) + OpenZeppelin `ReentrancyGuard`.                                                           |
+| **Tip griefing**                         | Keeper calls repeatedly                            | Each call strictly requires $\text{ICR} < \text{triggerICR}$ and must raise ICR. Once defended, ICR is above trigger and cannot be called again until price drops. |
+| **Smart contract owner (Mezo Passport)** | Owner is contract without EOA                      | All owner transfers use `.call{value: ...}("")` with 100k gas buffer. No `tx.origin` checks anywhere.                                                              |
+| **Dust amounts**                         | Small residual shortfall                           | If required defense value is $< 1000$ wei, calculation clamps or handles gracefully without precision reversion.                                                   |
 
 ---
 
@@ -273,6 +289,7 @@ event AssetSwept(address indexed vault, address indexed token, uint256 amount);
 ## 9. Public Contract API (Signatures Only)
 
 ### `IBallastFactory`
+
 ```solidity
 interface IBallastFactory {
     event VaultCreated(address indexed owner, address indexed vault);
@@ -285,6 +302,7 @@ interface IBallastFactory {
 ```
 
 ### `IBallastVault`
+
 ```solidity
 interface IBallastVault {
     struct Rule {

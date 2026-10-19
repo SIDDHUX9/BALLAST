@@ -14,16 +14,16 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 
 ## 2. Threat Matrix
 
-| Asset | Attacker | Attack Vector | Impact | Mitigation | Residual Risk |
-|---|---|---|---|---|---|
-| **BTC Collateral in Trove** | Malicious Actor | Unauthorized trove collateral withdrawal | Total loss of borrower collateral | Vault only allows `msg.sender == owner` to invoke `withdrawColl` / `adjustTrove` with collateral withdrawal. | Compromise of owner private key. |
-| **MUSD Defense Reserve** | Rogue Keeper | Excessive tip extraction via arbitrary defense triggers | Drainage of user MUSD reserve through repeated artificial tips | `defend()` strictly reverts unless $\text{currentICR} < \text{triggerICR}$. Tips are hard-capped at $\le 100\text{ bps}$ by contract validation. Each call must strictly increase ICR. | Owner sets `triggerICR` excessively high without realizing. |
-| **BTC Defense Reserve** | Reentrant Contract | Reentrancy during native BTC transfer / tip payment | Theft of vault native BTC reserve balance | Vault applies OpenZeppelin `ReentrancyGuard` to all external entrypoints and strictly enforces Checks-Effects-Interactions (reserve state deducted before native transfer). | Flaw in EVM call execution or compiler bug. |
-| **Trove Collateral** | External Arbitrageur | Oracle price manipulation (e.g. flash loan DEX pool skew) | Premature or distorted defense execution | Ballast uses Mezo's canonical on-chain `PriceFeed`, which reads from verified Chainlink-style oracle precompiles, NEVER a DEX spot AMM price. | Failure, latency, or corruption of Mezo's canonical oracle. |
-| **Keeper Gas Capital** | Front-running MEV Searcher | Front-running keeper `defend()` txs in mempool | Keeper wastes gas; searcher captures tip | `defend()` is permissionless; anyone can call it. While the keeper loses the tip, the **user's trove is still successfully defended**. | Keeper disincentivization if MEV searchers capture tips on public testnets/mainnet. |
-| **Trove Solvency** | Hostile Validator / Sequencer | Keeper transaction censorship during market plunge | Trove liquidated before defense tx confirms | Anyone can act as a keeper; transactions can be submitted via multiple RPC endpoints or directly to block proposers. | 100% validator censorship or total network halt. |
-| **Residual Vault Tokens** | Griefing Attacker | Sending stray tokens or native BTC directly to vault | State corruption or accounting distortion | Vault tracks `musdReserve` and `btcReserve` in explicit storage variables, NEVER via `address(this).balance` or `balanceOf(this)`. | Unclaimed stray tokens remain until owner calls `sweep()`. |
-| **Trove Position** | Uneducated User | Misconfiguring `triggerICR` too close to 110% MCR | Liquidation occurs before keeper can execute | Factory and vault validate $\text{triggerICR} \ge 112\%$. UI enforces recommended $> 115\%$ trigger with prominent warning dialogs. | Sudden BTC gap-down faster than block production. |
+| Asset                       | Attacker                      | Attack Vector                                             | Impact                                                         | Mitigation                                                                                                                                                                             | Residual Risk                                                                       |
+| --------------------------- | ----------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **BTC Collateral in Trove** | Malicious Actor               | Unauthorized trove collateral withdrawal                  | Total loss of borrower collateral                              | Vault only allows `msg.sender == owner` to invoke `withdrawColl` / `adjustTrove` with collateral withdrawal.                                                                           | Compromise of owner private key.                                                    |
+| **MUSD Defense Reserve**    | Rogue Keeper                  | Excessive tip extraction via arbitrary defense triggers   | Drainage of user MUSD reserve through repeated artificial tips | `defend()` strictly reverts unless $\text{currentICR} < \text{triggerICR}$. Tips are hard-capped at $\le 100\text{ bps}$ by contract validation. Each call must strictly increase ICR. | Owner sets `triggerICR` excessively high without realizing.                         |
+| **BTC Defense Reserve**     | Reentrant Contract            | Reentrancy during native BTC transfer / tip payment       | Theft of vault native BTC reserve balance                      | Vault applies OpenZeppelin `ReentrancyGuard` to all external entrypoints and strictly enforces Checks-Effects-Interactions (reserve state deducted before native transfer).            | Flaw in EVM call execution or compiler bug.                                         |
+| **Trove Collateral**        | External Arbitrageur          | Oracle price manipulation (e.g. flash loan DEX pool skew) | Premature or distorted defense execution                       | Ballast uses Mezo's canonical on-chain `PriceFeed`, which reads from verified Chainlink-style oracle precompiles, NEVER a DEX spot AMM price.                                          | Failure, latency, or corruption of Mezo's canonical oracle.                         |
+| **Keeper Gas Capital**      | Front-running MEV Searcher    | Front-running keeper `defend()` txs in mempool            | Keeper wastes gas; searcher captures tip                       | `defend()` is permissionless; anyone can call it. While the keeper loses the tip, the **user's trove is still successfully defended**.                                                 | Keeper disincentivization if MEV searchers capture tips on public testnets/mainnet. |
+| **Trove Solvency**          | Hostile Validator / Sequencer | Keeper transaction censorship during market plunge        | Trove liquidated before defense tx confirms                    | Anyone can act as a keeper; transactions can be submitted via multiple RPC endpoints or directly to block proposers.                                                                   | 100% validator censorship or total network halt.                                    |
+| **Residual Vault Tokens**   | Griefing Attacker             | Sending stray tokens or native BTC directly to vault      | State corruption or accounting distortion                      | Vault tracks `musdReserve` and `btcReserve` in explicit storage variables, NEVER via `address(this).balance` or `balanceOf(this)`.                                                     | Unclaimed stray tokens remain until owner calls `sweep()`.                          |
+| **Trove Position**          | Uneducated User               | Misconfiguring `triggerICR` too close to 110% MCR         | Liquidation occurs before keeper can execute                   | Factory and vault validate $\text{triggerICR} \ge 112\%$. UI enforces recommended $> 115\%$ trigger with prominent warning dialogs.                                                    | Sudden BTC gap-down faster than block production.                                   |
 
 ---
 
@@ -32,6 +32,7 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 ### 3.1 Oracle Risk & Staleness
 
 **Vector**: Oracle delay, stale price data, or oracle outage.
+
 - **Protocol Ground Truth**: Mezo's `PriceFeed.sol` enforces:
   ```solidity
   require(block.timestamp - updatedAt <= 60, "PriceFeed: Oracle is stale.");
@@ -48,6 +49,7 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 ### 3.2 Keeper Censorship & Latency Risk
 
 **Vector**: During severe market crashes (e.g., BTC dropping 15% in 5 minutes), network gas prices surge and mempools experience congestion. A keeper's transaction may sit pending while the market continues to fall.
+
 - **Mitigation**:
   - `triggerICR` must be set with an adequate safety margin (e.g. 120-125% ICR vs 110% MCR).
   - The tip incentive (`maxTipBps`) provides economic motivation for keepers to bid higher priority gas fees (`maxPriorityFeePerGas`) to ensure immediate block inclusion.
@@ -56,6 +58,7 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 ### 3.3 MEV, Sandwiching & Front-Running
 
 **Vector**: Searchers observe a keeper's `defend()` call in the public mempool and front-run it to capture the tip.
+
 - **Impact Analysis**:
   - From the borrower's perspective, **protection is fulfilled regardless of who calls `defend()`**. The borrower pays the exact same tip (`maxTipBps`) whether Keeper A or Searcher B executes it.
   - From the keeper's perspective, tip sniping can cause lost gas.
@@ -66,6 +69,7 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 ### 3.4 Reentrancy Attacks via Native BTC Refunds
 
 **Vector**: In Mezo, collateral is native BTC. When `defend()` pays a BTC tip or when `withdrawColl` sends funds, an external call `call{value: ...}("")` is triggered. A malicious contract receiver could reenter `BallastVault`.
+
 - **Mitigation**:
   1. **ReentrancyGuard**: All external state-changing functions in `BallastVault` are guarded by OpenZeppelin's `ReentrancyGuardUpgradeable` (`nonReentrant`).
   2. **Checks-Effects-Interactions (CEI)**: All internal reserve deductions (`btcReserve -= ...`) occur before any external low-level transfer.
@@ -73,12 +77,14 @@ Ballast is designed with strict non-custodial and trust-minimized security guara
 ### 3.5 Owner Key Compromise & Blast Radius
 
 **Vector**: A user's private key is compromised.
+
 - **Impact**: The attacker can withdraw defense reserves and close/adjust the user's trove.
 - **Blast Radius**: Because each user has an isolated EIP-1167 proxy vault, **a compromised user key affects only that user's vault**. There is zero shared pool, zero cross-vault contamination, and zero protocol-wide vulnerability.
 
 ### 3.6 Smart Account Compatibility (Mezo Passport)
 
 **Vector**: Mezo Passport utilizes smart account wallets (account abstraction). Contracts assuming `tx.origin == msg.sender` or utilizing Solidity `transfer()` (which restricts gas to 2300) break smart accounts.
+
 - **Mitigation**:
   - Ballast NEVER uses `tx.origin`. All authentication relies strictly on `msg.sender`.
   - All native BTC transfers to the owner or keeper use `.call{value: ...}("")` with full remaining gas, allowing smart contract wallets to process incoming funds without out-of-gas errors.

@@ -1,7 +1,8 @@
 # Project Brief: Ballast
 
 ## 1. Product Overview
-**Ballast** is a production-grade decentralized application (dApp) built natively for the **Mezo network** to protect borrowers of the Bitcoin-backed **MUSD stablecoin**. 
+
+**Ballast** is a production-grade decentralized application (dApp) built natively for the **Mezo network** to protect borrowers of the Bitcoin-backed **MUSD stablecoin**.
 
 In the MUSD protocol, borrowers open individual collateralized debt positions ("troves") by depositing BTC-backed collateral to mint MUSD. Ballast functions as an automated, non-custodial defense system: borrowers deposit a pre-funded defense reserve (collateral or MUSD debt repayment buffer) into a dedicated Ballast vault. When the borrower's Individual Collateral Ratio (ICR) drops below a user-configured safety trigger, permissionless off-chain keepers are incentivized to execute a defense transaction. This automatically injects collateral or repays debt to restore the trove to a safe ICR, preventing catastrophic liquidation or redemption.
 

@@ -2,14 +2,33 @@
   "name": "ballast-monorepo",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
+    "dev": "pnpm --filter @ballast/web dev",
+    "build": "pnpm --filter @ballast/shared build && pnpm --filter @ballast/keeper build && pnpm --filter @ballast/web build",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "typecheck": "pnpm --recursive run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "contracts:test": "pnpm --filter @ballast/contracts test",
+    "contracts:fork-test": "pnpm --filter @ballast/contracts fork-test",
     "recon": "tsx scripts/recon.ts",
-    "trove-lifecycle": "tsx scripts/trove-lifecycle.ts"
+    "trove-lifecycle": "tsx scripts/trove-lifecycle.ts",
+    "audit:bundle": "node scripts/check-clean-bundle.js"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.10.2",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.16.0",
+    "globals": "^17.13.0",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "viem": "^2.21.57"
+    "viem": "^2.21.57",
+    "vitest": "^2.1.8"
   }
 }
