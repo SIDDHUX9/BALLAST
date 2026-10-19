@@ -9,6 +9,30 @@ This document records architectural and technical decisions made for **Ballast**
 | ID | Title | Status | Date | Decision Maker |
 |---|---|---|---|---|
 | [ADR-0001](#adr-0001-per-user-minimal-proxy-vault-owns-trove-architecture) | Per-User Minimal Proxy Vault-Owns-Trove Architecture | Accepted | 2026-10-19 | Lead Engineer |
+| [ADR-0002](#adr-0002-tooling-selection-and-evm-target-version) | Tooling Selection (ESLint & Prettier) and EVM Target Version (London) | Accepted | 2026-10-19 | Lead Engineer |
+
+---
+
+## ADR-0002: Tooling Selection and EVM Target Version
+
+### Status
+Accepted
+
+### Date
+2026-10-19
+
+### Context & Problem Statement
+1. **Linter & Formatter**: Monorepo packages include Next.js (`apps/web`), a Fastify Node backend (`apps/keeper`), and shared libraries (`packages/shared`). We need unified, fast, and reliable linting and formatting across TypeScript, React, and configuration files.
+2. **Solidity EVM Target**: Newer Solidity compilers (0.8.20+) default to the `shanghai` or `cancun` EVM, which generate the `PUSH0` opcode. If the target chain does not support `PUSH0`, contract deployment fails on-chain.
+
+### Decision
+1. **ESLint & Prettier**: We select ESLint (with `@typescript-eslint`) and Prettier rather than Biome. ESLint integrates natively with Next.js Core Web Vitals (`eslint-config-next`) and enables custom rule AST checks to enforce Rule 2 (verifying that no test double or burner key connector leaks into a production web bundle).
+2. **Solidity EVM Version (London)**: Target `evm_version = "london"` with `solc = "0.8.24"` and `optimizer_runs = 200`. This matches Mezo's canonical MUSD protocol configuration (`vendor/musd/solidity/hardhat.config.ts`), guaranteeing compatibility and avoiding unsupported opcodes like `PUSH0` or `BLOBBASEFEE`.
+
+### Consequences
+- Reliable deployment on Mezo network without opcode incompatibility.
+- Full tooling compatibility across Next.js, Node.js, and CI workflows.
+
 
 ---
 
