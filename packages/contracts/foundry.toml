@@ -13,7 +13,7 @@ optimizer = true
 optimizer_runs = 200
 fs_permissions = [{ access = "read-write", path = "./" }]
 
-[profile.default.rpc_endpoints]
+[rpc_endpoints]
 matsnet = "${MATSNET_RPC_URL}"
 
 [profile.ci]
