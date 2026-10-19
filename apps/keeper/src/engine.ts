@@ -202,10 +202,29 @@ export class KeeperEngine {
         functionName: 'checkDefense' as const,
       }));
 
-      const results = await publicClient.multicall({
-        contracts: multicallContracts,
-        allowFailure: true,
-      });
+      let results: Array<{ status: 'success' | 'failure'; result?: unknown; error?: unknown }>;
+      try {
+        results = await publicClient.multicall({
+          contracts: multicallContracts,
+          allowFailure: true,
+        });
+      } catch (mcErr) {
+        this.logger.debug({ mcErr }, 'Multicall3 threw error, falling back to concurrent readContract calls');
+        results = await Promise.all(
+          trackedVaults.map(async (v) => {
+            try {
+              const res = await publicClient.readContract({
+                address: v.address,
+                abi: BallastVaultAbi,
+                functionName: 'checkDefense',
+              });
+              return { status: 'success' as const, result: res };
+            } catch (err) {
+              return { status: 'failure' as const, error: err };
+            }
+          }),
+        );
+      }
 
       const defendableVaults: CheckDefenseOutput[] = [];
 

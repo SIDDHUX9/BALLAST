@@ -1,9 +1,15 @@
-import { DatabaseSync } from 'node:sqlite';
+import { createRequire } from 'node:module';
+import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite';
 import type { Address } from 'viem';
 import type { TrackedVault, DefenseRecord, ICRSnapshot } from './types.js';
 
+const require = createRequire(import.meta.url);
+const { DatabaseSync } = require('node:sqlite') as {
+  DatabaseSync: new (path: string) => DatabaseSyncType;
+};
+
 export class KeeperDatabase {
-  private db: DatabaseSync;
+  private db: DatabaseSyncType;
 
   constructor(dbPath: string = 'ballast-keeper.db') {
     this.db = new DatabaseSync(dbPath);

@@ -143,6 +143,32 @@ export async function computeDefenseHints(
       // ignore, first and last remain zeroAddress
     }
 
+    // Check if NICR is >= head or <= tail for instant O(1) boundary hints
+    try {
+      if (first !== zeroAddress) {
+        const headNicr = await client.readContract({
+          address: troveManager,
+          abi: [
+            {
+              type: 'function',
+              name: 'getNominalICR',
+              inputs: [{ name: '_borrower', type: 'address' }],
+              outputs: [{ name: '', type: 'uint256' }],
+              stateMutability: 'view',
+            },
+          ],
+          functionName: 'getNominalICR',
+          args: [first],
+        });
+
+        if (nicr >= headNicr) {
+          return { upperHint: zeroAddress, lowerHint: first };
+        }
+      }
+    } catch {
+      // ignore and continue
+    }
+
     const hints = await client.readContract({
       address: sortedTroves,
       abi: SORTED_TROVES_ABI,

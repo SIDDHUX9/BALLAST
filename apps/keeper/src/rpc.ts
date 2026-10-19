@@ -55,6 +55,12 @@ export class ResilientRpcManager {
         default: { http: [this.rpcUrls[0]] },
         public: { http: [this.rpcUrls[0]] },
       },
+      contracts: {
+        multicall3: {
+          address: '0xca11bde05977b3631167028862be2a173976ca11',
+          blockCreated: 0,
+        },
+      },
     };
 
     this.publicClient = this.buildPublicClient(this.rpcUrls[0]);
@@ -67,10 +73,11 @@ export class ResilientRpcManager {
     return createPublicClient({
       chain: this.chain,
       transport: http(url, {
-        timeout: 10000,
+        timeout: 15000,
         retryCount: 2,
         retryDelay: 1000,
       }),
+      pollingInterval: 500,
     });
   }
 
