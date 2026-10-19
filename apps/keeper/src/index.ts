@@ -1,25 +1,104 @@
-import { buildServer } from './server.js';
-import { loadConfig } from './config.js';
+import pino from 'pino';
 import { BRAND_NAME } from '@ballast/shared';
+import { loadConfig } from './config.js';
+import { KeeperDatabase } from './db.js';
+import { KeeperMetrics } from './metrics.js';
+import { ResilientRpcManager } from './rpc.js';
+import { KeeperEngine } from './engine.js';
+import { buildServer } from './server.js';
+import type { Hex } from 'viem';
 
-async function start() {
+async function main() {
   const config = loadConfig();
-  const server = buildServer();
 
-  const port = Number(process.env.PORT || 3001);
-  const host = process.env.HOST || '0.0.0.0';
+  const logger = pino({
+    level: config.logLevel,
+    transport:
+      process.env.NODE_ENV !== 'production'
+        ? {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+              translateTime: 'SYS:standard',
+              ignore: 'pid,hostname',
+            },
+          }
+        : undefined,
+  });
+
+  logger.info(
+    {
+      brand: BRAND_NAME,
+      chainId: config.chainId,
+      factory: config.factoryAddress,
+      dryRun: config.dryRun,
+      altruistic: config.altruistic,
+      pollIntervalMs: config.pollIntervalMs,
+    },
+    `Starting ${BRAND_NAME} Keeper Service`,
+  );
+
+  const db = new KeeperDatabase(config.dbPath);
+  const metrics = new KeeperMetrics();
+
+  const rpcManager = new ResilientRpcManager(
+    config.rpcUrls,
+    config.chainId,
+    config.dryRun ? undefined : (config.keeperPrivateKey as Hex),
+    logger,
+  );
+
+  const engine = new KeeperEngine(config, db, metrics, rpcManager, logger);
+
+  const server = buildServer(
+    {
+      engine,
+      metrics,
+      rpcManager,
+      db,
+    },
+    config.logLevel,
+  );
+
+  // Graceful shutdown handling
+  let isShuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    logger.info({ signal }, 'Received termination signal, shutting down gracefully...');
+
+    try {
+      await engine.stop();
+      await server.close();
+      db.close();
+      logger.info('Clean shutdown completed.');
+      process.exit(0);
+    } catch (err) {
+      logger.error({ err }, 'Error during shutdown');
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 
   try {
-    await server.listen({ port, host });
-    server.log.info(
-      `${BRAND_NAME} keeper listening on ${host}:${port} (Chain ID: ${config.chainId})`,
+    await server.listen({ port: config.port, host: config.host });
+    logger.info(
+      `Fastify server listening on http://${config.host}:${config.port} (/healthz, /metrics, /signals, /defenses)`,
     );
+
+    await engine.start();
   } catch (err) {
-    server.log.error(err);
+    logger.fatal({ err }, 'Failed to start keeper service');
     process.exit(1);
   }
 }
 
+// Only auto-start when executed directly
 if (process.env.NODE_ENV !== 'test') {
-  start();
+  main().catch((err) => {
+    console.error('Fatal initialization error:', err);
+    process.exit(1);
+  });
 }
