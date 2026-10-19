@@ -40,3 +40,9 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Databases and Local Storage
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
