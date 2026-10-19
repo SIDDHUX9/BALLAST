@@ -72,13 +72,34 @@ export const ProtocolAddressesSchema = z.object({
   pcv: AddressSchema,
 });
 
+export const CompilerSettingsSchema = z.object({
+  solc: z.string(),
+  evmVersion: z.string(),
+  optimizer: z.boolean(),
+  runs: z.number().int().nonnegative(),
+});
+
+export const DeploymentTxHashesSchema = z
+  .object({
+    ballastVaultImplementation: HashSchema.optional(),
+    ballastFactory: HashSchema.optional(),
+  })
+  .catchall(HashSchema);
+
 export const DeploymentSchema = z.object({
   chainId: z.number().int().positive(),
+  deployer: AddressSchema.optional(),
   ballastFactory: AddressSchema,
   ballastVaultImplementation: AddressSchema,
   protocol: ProtocolAddressesSchema,
+  deployBlockNumber: z.number().int().positive().optional(),
   deployedAtBlock: z.number().int().positive().optional(),
+  txHashes: DeploymentTxHashesSchema.optional(),
+  compilerSettings: CompilerSettingsSchema.optional(),
+  gitCommitHash: z.string().optional(),
+  timestamp: z.string().optional(),
 });
+
 
 export type RuleConfig = z.infer<typeof RuleConfigSchema>;
 export type KeeperConfig = z.infer<typeof KeeperConfigSchema>;

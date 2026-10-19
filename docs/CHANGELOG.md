@@ -13,7 +13,16 @@ Entries are listed in reverse chronological order (newest first).
 
 ### Added
 
+- Live deployment of Ballast core contracts to Mezo Testnet (Matsnet, Chain ID 31611) at block `16251639`:
+  - `BallastVault` (Implementation): `0x815893bad1708a201eeeaf226eed576a7ffea4bc`
+  - `BallastFactory`: `0x8d5b392839300b487addeecc35f5bc534111cd33`
+  - Validated metadata committed to `deployments/matsnet.json` matching `DeploymentSchema`.
+  - Exported typed ABIs to `packages/shared/abis/` and constants in `packages/shared/src/abis.ts` via `pnpm contracts:export`.
+  - Generated standalone standard-json inputs for Blockscout in `deployments/`.
+  - Authored `docs/DEPLOYMENT.md` with complete explorer links and operational guides.
+  - Implemented and verified end-to-end live testnet smoke test (`scripts/smoke.ts` / `pnpm smoke`).
 - Comprehensive Foundry Fork test suite for `packages/contracts` pinned to block `16250250` on Mezo Testnet (Matsnet, Chain ID 31611):
+
   - `BallastFactoryFork.t.sol`: Deterministic CREATE2 addresses, single-vault-per-owner mapping, reinitialization protection, implementation lock.
   - `BallastLifecycleFork.t.sol`: Complete trove operations (open, borrow more, add collateral, repay, withdraw collateral, close) executed against real deployed Mezo contracts.
   - `BallastRulesFork.t.sol`: Strict parameter validation (MCR margin $\ge 112\%$, target separation $\ge 500$ bps, caps at $250\%$ and $300\%$, tip cap $\le 100$ bps).

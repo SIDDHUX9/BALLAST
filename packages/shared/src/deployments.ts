@@ -3,11 +3,27 @@ import { DeploymentSchema } from './schemas.js';
 
 export interface BallastDeployment {
   chainId: number;
+  deployer?: `0x${string}`;
   ballastFactory: `0x${string}`;
   ballastVaultImplementation: `0x${string}`;
   protocol: ProtocolAddresses;
+  deployBlockNumber?: number;
   deployedAtBlock?: number;
+  txHashes?: {
+    ballastVaultImplementation?: `0x${string}`;
+    ballastFactory?: `0x${string}`;
+    [key: string]: `0x${string}` | undefined;
+  };
+  compilerSettings?: {
+    solc: string;
+    evmVersion: string;
+    optimizer: boolean;
+    runs: number;
+  };
+  gitCommitHash?: string;
+  timestamp?: string;
 }
+
 
 /**
  * Validates and parses raw deployment JSON or object.

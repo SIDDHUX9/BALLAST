@@ -13,7 +13,10 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
     "contracts:test": "pnpm --filter @ballast/contracts test",
     "contracts:fork-test": "pnpm --filter @ballast/contracts fork-test",
+    "contracts:export": "tsx scripts/export-contracts.ts && pnpm --filter @ballast/shared build",
+    "deploy": "tsx scripts/deploy.ts",
     "recon": "tsx scripts/recon.ts",
+    "smoke": "tsx scripts/smoke.ts",
     "trove-lifecycle": "tsx scripts/trove-lifecycle.ts",
     "audit:bundle": "node scripts/check-clean-bundle.js"
   },
