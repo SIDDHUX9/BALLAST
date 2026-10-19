@@ -7,6 +7,7 @@ import { BRAND_NAME, BRAND_TAGLINE } from '@ballast/shared';
 import { useTheme } from '../theme-provider';
 import { Sun, Moon, Anchor } from 'lucide-react';
 import { Button } from '../ui/button';
+import { WalletButton } from '../wallet/wallet-button';
 
 export interface HeaderProps {
   walletSlot?: React.ReactNode;
@@ -111,21 +112,17 @@ export function Header({ walletSlot }: HeaderProps) {
           {/* App Entry or Wallet Slot */}
           {walletSlot ? (
             walletSlot
-          ) : !isApp ? (
-            <Link href="/app">
-              <Button size="sm" variant="primary">
-                Open App
-              </Button>
-            </Link>
+          ) : isApp ? (
+            <WalletButton />
           ) : (
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled
-              title="Wallet connection available in prompt 5"
-            >
-              Connect Wallet
-            </Button>
+            <div className="flex items-center gap-2">
+              <WalletButton />
+              <Link href="/app">
+                <Button size="sm" variant="primary">
+                  Open App
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </div>
