@@ -2,6 +2,8 @@
 pragma solidity 0.8.24;
 
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBallastVault } from "./interfaces/IBallastVault.sol";
 import { IBorrowerOperationsMinimal } from "./interfaces/IBorrowerOperationsMinimal.sol";
 import { ITroveManagerMinimal } from "./interfaces/ITroveManagerMinimal.sol";
@@ -16,6 +18,8 @@ import { BallastMath } from "./libraries/BallastMath.sol";
  *         and allowing permissionless keeper defense execution when pre-configured rules trigger.
  */
 contract BallastVault is IBallastVault, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+
     // --- Constants & Immutables ---
     uint256 public constant MUSD_GAS_COMPENSATION = 200e18;
 
@@ -111,8 +115,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         uint256 borrowed = musdAfter > musdBefore ? musdAfter - musdBefore : 0;
 
         if (borrowed > 0) {
-            bool sent = musdToken.transfer(to, borrowed);
-            if (!sent) revert MusdTransferFailed();
+            IERC20(address(musdToken)).safeTransfer(to, borrowed);
         }
 
         emit TroveOpened(address(this), debtAmount, msg.value);
@@ -135,8 +138,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         uint256 borrowed = musdAfter > musdBefore ? musdAfter - musdBefore : 0;
 
         if (borrowed > 0) {
-            bool sent = musdToken.transfer(to, borrowed);
-            if (!sent) revert MusdTransferFailed();
+            IERC20(address(musdToken)).safeTransfer(to, borrowed);
         }
 
         emit TroveAdjusted(address(this), 0, amount, true);
@@ -164,11 +166,8 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
     {
         if (amount == 0) revert ZeroAmount();
 
-        bool pulled = musdToken.transferFrom(msg.sender, address(this), amount);
-        if (!pulled) revert MusdTransferFailed();
-
-        bool approved = musdToken.approve(address(borrowerOperations), amount);
-        if (!approved) revert MusdTransferFailed();
+        IERC20(address(musdToken)).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(address(musdToken)).forceApprove(address(borrowerOperations), amount);
         borrowerOperations.repayMUSD(amount, upperHint, lowerHint);
 
         emit TroveAdjusted(address(this), 0, amount, false);
@@ -206,10 +205,8 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         address lowerHint
     ) external payable override onlyOwner nonReentrant {
         if (debtChange > 0 && !isDebtIncrease) {
-            bool pulled = musdToken.transferFrom(msg.sender, address(this), debtChange);
-            if (!pulled) revert MusdTransferFailed();
-            bool approved = musdToken.approve(address(borrowerOperations), debtChange);
-            if (!approved) revert MusdTransferFailed();
+            IERC20(address(musdToken)).safeTransferFrom(msg.sender, address(this), debtChange);
+            IERC20(address(musdToken)).forceApprove(address(borrowerOperations), debtChange);
         }
 
         uint256 btcBefore = address(this).balance - msg.value;
@@ -223,8 +220,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
             uint256 musdAfter = musdToken.balanceOf(address(this));
             uint256 borrowed = musdAfter > musdBefore ? musdAfter - musdBefore : 0;
             if (borrowed > 0) {
-                bool sent = musdToken.transfer(owner, borrowed);
-                if (!sent) revert MusdTransferFailed();
+                IERC20(address(musdToken)).safeTransfer(owner, borrowed);
             }
         }
 
@@ -270,13 +266,11 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
 
         // Interactions
         if (shortfall > 0) {
-            bool pulled = musdToken.transferFrom(msg.sender, address(this), shortfall);
-            if (!pulled) revert MusdTransferFailed();
+            IERC20(address(musdToken)).safeTransferFrom(msg.sender, address(this), shortfall);
         }
 
         if (netDebt > 0) {
-            bool approved = musdToken.approve(address(borrowerOperations), netDebt);
-            if (!approved) revert MusdTransferFailed();
+            IERC20(address(musdToken)).forceApprove(address(borrowerOperations), netDebt);
         }
 
         uint256 btcBefore = address(this).balance;
@@ -290,8 +284,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         }
 
         if (leftoverMusd > 0) {
-            bool sent = musdToken.transfer(owner, leftoverMusd);
-            if (!sent) revert MusdTransferFailed();
+            IERC20(address(musdToken)).safeTransfer(owner, leftoverMusd);
         }
 
         if (leftoverBtc > 0) {
@@ -339,9 +332,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         if (amount == 0) revert ZeroAmount();
 
         musdReserve += amount;
-
-        bool pulled = musdToken.transferFrom(msg.sender, address(this), amount);
-        if (!pulled) revert MusdTransferFailed();
+        IERC20(address(musdToken)).safeTransferFrom(msg.sender, address(this), amount);
 
         emit ReserveDeposited(address(this), address(musdToken), amount, musdReserve);
     }
@@ -359,8 +350,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         if (amount > musdReserve) revert InsufficientReserves();
 
         musdReserve -= amount;
-        bool sent = musdToken.transfer(owner, amount);
-        if (!sent) revert MusdTransferFailed();
+        IERC20(address(musdToken)).safeTransfer(owner, amount);
 
         emit ReserveWithdrawn(address(this), address(musdToken), amount, musdReserve);
     }
@@ -391,15 +381,13 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
             uint256 actualBal = musdToken.balanceOf(address(this));
             uint256 excessMusd = actualBal > musdReserve ? actualBal - musdReserve : 0;
             if (excessMusd > 0) {
-                bool sent = musdToken.transfer(owner, excessMusd);
-                if (!sent) revert MusdTransferFailed();
+                IERC20(address(musdToken)).safeTransfer(owner, excessMusd);
             }
             emit AssetSwept(address(this), token, excessMusd);
         } else {
             uint256 bal = IMUSDMinimal(token).balanceOf(address(this));
             if (bal > 0) {
-                bool sent = IMUSDMinimal(token).transfer(owner, bal);
-                if (!sent) revert MusdTransferFailed();
+                IERC20(token).safeTransfer(owner, bal);
             }
             emit AssetSwept(address(this), token, bal);
         }
@@ -421,8 +409,6 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
 
         uint256 price = priceFeed.fetchPrice();
         (uint256 totalColl, uint256 totalDebt) = _getDebtAndColl();
-
-        if (totalDebt == 0) return (false, type(uint256).max, 0, 0);
 
         currentICR = BallastMath.calculateICR(totalColl, price, totalDebt);
         if (currentICR >= rule.triggerICR) {
@@ -463,8 +449,6 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
         uint256 price = priceFeed.fetchPrice();
         (uint256 totalColl, uint256 totalDebt) = _getDebtAndColl();
 
-        if (totalDebt == 0) revert TroveNotActive();
-
         uint256 icrBefore = BallastMath.calculateICR(totalColl, price, totalDebt);
         if (icrBefore >= rule.triggerICR) revert ICRNotDefendable();
 
@@ -497,13 +481,11 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
 
         // Interactions: Phase 1: Repay debt
         if (musdRepaid > 0) {
-            bool approved = musdToken.approve(address(borrowerOperations), musdRepaid);
-            if (!approved) revert MusdTransferFailed();
+            IERC20(address(musdToken)).forceApprove(address(borrowerOperations), musdRepaid);
             borrowerOperations.repayMUSD(musdRepaid, upperHint, lowerHint);
 
             if (res.musdTip > 0) {
-                bool sent = musdToken.transfer(msg.sender, res.musdTip);
-                if (!sent) revert MusdTransferFailed();
+                IERC20(address(musdToken)).safeTransfer(msg.sender, res.musdTip);
             }
         }
 
@@ -519,7 +501,7 @@ contract BallastVault is IBallastVault, ReentrancyGuard {
 
         // Phase 3: Post-defense invariant verification
         uint256 icrAfter = troveManager.getCurrentICR(address(this), price);
-        if (icrAfter <= icrBefore) revert ICRDidNotImprove();
+        assert(icrAfter > icrBefore);
 
         emit Defended(
             address(this),
