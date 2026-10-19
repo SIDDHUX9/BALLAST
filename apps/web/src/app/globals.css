@@ -3,13 +3,91 @@
 @tailwind utilities;
 
 :root {
-  --background: #090a0f;
-  --foreground: #ededed;
+  --bg-paper: #F4F1EA;
+  --bg-paper-raised: #FBFAF6;
+  --bg-surface: #FFFFFF;
+  --text-ink: #14130F;
+  --text-ink-soft: #3A3830;
+  --text-muted: #6B675C;
+  --border-hairline: rgba(20, 19, 15, 0.14);
+  --border-strong: rgba(20, 19, 15, 0.28);
+  
+  --color-safe: #2F6F5E;
+  --color-safe-bg: rgba(47, 111, 94, 0.09);
+  --color-watch: #B7791F;
+  --color-watch-bg: rgba(183, 121, 31, 0.09);
+  --color-danger: #A32020;
+  --color-danger-bg: rgba(163, 32, 32, 0.09);
+  --color-ember: #B8431F;
+  --color-ember-soft: rgba(184, 67, 31, 0.09);
+  --shadow-color: rgba(20, 19, 15, 0.08);
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  min-height: 100vh;
+.dark {
+  --bg-paper: #0E0E0C;
+  --bg-paper-raised: #151512;
+  --bg-surface: #1C1B18;
+  --text-ink: #EDE9DF;
+  --text-ink-soft: #C7C2B4;
+  --text-muted: #8F8A7C;
+  --border-hairline: rgba(237, 233, 223, 0.14);
+  --border-strong: rgba(237, 233, 223, 0.28);
+
+  --color-safe: #449B85;
+  --color-safe-bg: rgba(68, 155, 133, 0.14);
+  --color-watch: #D9983B;
+  --color-watch-bg: rgba(217, 152, 59, 0.14);
+  --color-danger: #E04A4A;
+  --color-danger-bg: rgba(224, 74, 74, 0.14);
+  --color-ember: #D95C34;
+  --color-ember-soft: rgba(217, 92, 52, 0.14);
+  --shadow-color: rgba(0, 0, 0, 0.6);
+}
+
+@layer base {
+  * {
+    border-color: var(--border-hairline);
+  }
+
+  body {
+    background-color: var(--bg-paper);
+    color: var(--text-ink);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Accessible focus ring */
+  *:focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 2px;
+  }
+
+  /* Real line-height and measure for prose */
+  p {
+    max-width: 68ch;
+    line-height: 1.625;
+  }
+}
+
+/* Numerals tabular font variant */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hairline borders */
+.border-hairline {
+  border-color: var(--border-hairline);
+}
+
+/* Motion reduction */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

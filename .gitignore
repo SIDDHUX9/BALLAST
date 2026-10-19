@@ -23,6 +23,7 @@ typechain-types/
 # Testing and Coverage
 coverage/
 *.lcov
+lighthouse-report.json
 
 # Logs
 *.log
