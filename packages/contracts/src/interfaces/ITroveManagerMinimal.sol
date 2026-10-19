@@ -10,14 +10,9 @@ interface ITroveManagerMinimal {
         closedByRedemption
     }
 
-    function getCurrentICR(
-        address _borrower,
-        uint256 _price
-    ) external view returns (uint256);
+    function getCurrentICR(address _borrower, uint256 _price) external view returns (uint256);
 
-    function getEntireDebtAndColl(
-        address _borrower
-    )
+    function getEntireDebtAndColl(address _borrower)
         external
         view
         returns (
