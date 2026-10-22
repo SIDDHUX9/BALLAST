@@ -5,6 +5,7 @@ import {
   computeCollateralNeeded,
   computeLiquidationPrice,
   computeTip,
+  computeAbsorptionCapacity,
   PRECISION,
 } from '../src/math.js';
 
@@ -104,5 +105,35 @@ describe('Ballast Math Library', () => {
 
     const tip100Bps = computeTip(amount, 100); // 1.00%
     expect(tip100Bps).toBe(10n * PRECISION);
+  });
+
+  it('computes absorption capacity with reserves correctly', () => {
+    // Current price: $80,000
+    // Collateral: 0.05 BTC
+    // Debt: 2,500 MUSD
+    // Target ICR: 130% (1.30e18)
+    // Reserves: 500 MUSD, 0.01 BTC
+    // totalCollateral = 0.06 BTC
+    // remainingDebt = 2,500 - 500 = 2,000 MUSD
+    // criticalPrice = (1.3 * 2,000) / 0.06 = 2,600 / 0.06 = $43,333.33
+    // drop = (80,000 - 43,333.33) / 80,000 = ~45.83%
+    const coll = (5n * PRECISION) / 100n;
+    const debt = 2500n * PRECISION;
+    const targetICR = 1300000000000000000n; // 130%
+    const musdReserve = 500n * PRECISION;
+    const btcReserve = (1n * PRECISION) / 100n; // 0.01 BTC
+
+    const result = computeAbsorptionCapacity(
+      coll,
+      debt,
+      price,
+      targetICR,
+      musdReserve,
+      btcReserve,
+      minNetDebt,
+    );
+
+    expect(result.absorbableDropPercent).toBeGreaterThan(45);
+    expect(result.absorbableDropPercent).toBeLessThan(46);
   });
 });

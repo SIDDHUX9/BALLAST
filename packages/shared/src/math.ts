@@ -110,3 +110,57 @@ export function computeTip(amount: bigint, maxTipBps: number): bigint {
   if (amount === 0n || maxTipBps <= 0) return 0n;
   return (amount * BigInt(maxTipBps)) / 10000n;
 }
+
+/**
+ * Computes the maximum percentage BTC price drop that the vault's current collateral
+ * plus available reserves can absorb before ICR drops below targetICR.
+ * 
+ * Reserves can repay debt down to minNetDebt + MUSD_GAS_COMPENSATION,
+ * and add btcReserve to collateral.
+ * 
+ * criticalPrice = (targetICR * remainingDebt) / totalCollateral
+ * absorbableDropPercent = max(0, (currentPrice - criticalPrice) / currentPrice * 100)
+ */
+export function computeAbsorptionCapacity(
+  collateral: bigint,
+  debt: bigint,
+  currentPrice: bigint,
+  targetICR: bigint,
+  musdReserve: bigint,
+  btcReserve: bigint,
+  minNetDebt: bigint = 0n,
+): { criticalPrice: bigint; absorbableDropPercent: number } {
+  if (currentPrice === 0n || targetICR === 0n) {
+    return { criticalPrice: 0n, absorbableDropPercent: 0 };
+  }
+
+  // Net debt calculation
+  const netDebt = debt > MUSD_GAS_COMPENSATION ? debt - MUSD_GAS_COMPENSATION : 0n;
+  const maxLegalRepay = netDebt > minNetDebt ? netDebt - minNetDebt : 0n;
+  const repayAmount = musdReserve < maxLegalRepay ? musdReserve : maxLegalRepay;
+
+  const remainingDebt = debt > repayAmount ? debt - repayAmount : 0n;
+  const totalCollateral = collateral + btcReserve;
+
+  if (totalCollateral === 0n) {
+    return { criticalPrice: 0n, absorbableDropPercent: 0 };
+  }
+
+  if (remainingDebt === 0n) {
+    return { criticalPrice: 0n, absorbableDropPercent: 100 };
+  }
+
+  const criticalPrice = (targetICR * remainingDebt) / totalCollateral;
+
+  if (criticalPrice >= currentPrice) {
+    return { criticalPrice, absorbableDropPercent: 0 };
+  }
+
+  const dropWei = currentPrice - criticalPrice;
+  const absorbableDropPercent = Number((dropWei * 10000n) / currentPrice) / 100;
+
+  return {
+    criticalPrice,
+    absorbableDropPercent,
+  };
+}
