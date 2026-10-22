@@ -307,7 +307,7 @@ export class KeeperEngine {
     const publicClient = this.rpcManager.getPublicClient();
 
     // Fetch rule, reserves, trove, and price
-    const [ruleRes, musdReserve, btcReserve, trove] = await Promise.all([
+    const [ruleRes, musdReserve, btcReserve, debt, coll, troveStatus] = await Promise.all([
       publicClient.readContract({
         address: vault,
         abi: BallastVaultAbi,
@@ -326,14 +326,22 @@ export class KeeperEngine {
       publicClient.readContract({
         address: this.config.troveManagerAddress,
         abi: MINIMAL_TROVE_MANAGER_ABI,
-        functionName: 'Troves',
+        functionName: 'getTroveDebt',
         args: [vault],
-      }) as Promise<[bigint, bigint, bigint, number]>,
+      }) as Promise<bigint>,
+      publicClient.readContract({
+        address: this.config.troveManagerAddress,
+        abi: MINIMAL_TROVE_MANAGER_ABI,
+        functionName: 'getTroveColl',
+        args: [vault],
+      }) as Promise<bigint>,
+      publicClient.readContract({
+        address: this.config.troveManagerAddress,
+        abi: MINIMAL_TROVE_MANAGER_ABI,
+        functionName: 'getTroveStatus',
+        args: [vault],
+      }) as Promise<number>,
     ]);
-
-    const debt = trove[0];
-    const coll = trove[1];
-    const troveStatus = trove[3];
 
     // Check position ended (2: closedByOwner, 3: closedByLiquidation, 4: closedByRedemption)
     if (troveStatus === 2) {

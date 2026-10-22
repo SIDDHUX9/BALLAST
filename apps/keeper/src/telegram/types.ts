@@ -99,14 +99,23 @@ export interface OperationalAlertData {
 export const MINIMAL_TROVE_MANAGER_ABI = [
   {
     type: 'function',
-    name: 'Troves',
+    name: 'getTroveDebt',
     inputs: [{ name: '_borrower', type: 'address' }],
-    outputs: [
-      { name: 'debt', type: 'uint256' },
-      { name: 'coll', type: 'uint256' },
-      { name: 'stake', type: 'uint256' },
-      { name: 'status', type: 'uint8' },
-    ],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getTroveColl',
+    inputs: [{ name: '_borrower', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getTroveStatus',
+    inputs: [{ name: '_borrower', type: 'address' }],
+    outputs: [{ name: '', type: 'uint8' }],
     stateMutability: 'view',
   },
   {
@@ -120,3 +129,4 @@ export const MINIMAL_TROVE_MANAGER_ABI = [
     stateMutability: 'view',
   },
 ] as const;
+

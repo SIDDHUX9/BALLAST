@@ -160,16 +160,26 @@ export class TelegramBotService implements OutboxSender {
           const triggerICR = ruleRes[1];
 
           // Read Trove state from TroveManager
-          const trove = (await this.publicClient.readContract({
-            address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
-            abi: MINIMAL_TROVE_MANAGER_ABI,
-            functionName: 'Troves',
-            args: [vaultAddress],
-          })) as [bigint, bigint, bigint, number];
-
-          const debt = trove[0];
-          const coll = trove[1];
-          const troveStatus = trove[3];
+          const [debt, coll, troveStatus] = await Promise.all([
+            this.publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: MINIMAL_TROVE_MANAGER_ABI,
+              functionName: 'getTroveDebt',
+              args: [vaultAddress],
+            }) as Promise<bigint>,
+            this.publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: MINIMAL_TROVE_MANAGER_ABI,
+              functionName: 'getTroveColl',
+              args: [vaultAddress],
+            }) as Promise<bigint>,
+            this.publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: MINIMAL_TROVE_MANAGER_ABI,
+              functionName: 'getTroveStatus',
+              args: [vaultAddress],
+            }) as Promise<number>,
+          ]);
 
           const mcr = 1100000000000000000n; // 110%
           const liqPrice = computeLiquidationPrice(coll, debt, mcr);

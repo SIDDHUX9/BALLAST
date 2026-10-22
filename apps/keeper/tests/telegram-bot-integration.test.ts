@@ -38,9 +38,14 @@ describe('Telegram Bot Commands & Outbox Integration', () => {
           // [enabled, triggerICR, targetICR, maxTipBps]
           return [true, (140n * PRECISION) / 100n, (150n * PRECISION) / 100n, 100];
         }
-        if (args.functionName === 'Troves') {
-          // [debt, coll, stake, status]
-          return [2500n * PRECISION, (5n * PRECISION) / 100n, 0n, 1]; // active
+        if (args.functionName === 'getTroveDebt') {
+          return 2500n * PRECISION;
+        }
+        if (args.functionName === 'getTroveColl') {
+          return (5n * PRECISION) / 100n;
+        }
+        if (args.functionName === 'getTroveStatus') {
+          return 1; // active
         }
         if (args.functionName === 'fetchPrice') {
           return 80000n * PRECISION; // $80,000 / BTC

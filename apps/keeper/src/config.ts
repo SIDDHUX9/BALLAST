@@ -58,20 +58,40 @@ function findDeploymentJson(): { factory?: string; deployBlock?: number } {
   return {};
 }
 
+function loadEnvFiles(): void {
+  const envCandidates = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '../../.env'),
+    path.resolve(process.cwd(), '../.env'),
+  ];
+  for (const envPath of envCandidates) {
+    if (fs.existsSync(envPath) && typeof process.loadEnvFile === 'function') {
+      try {
+        process.loadEnvFile(envPath);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
 function resolvePrivateKey(): string {
   // 1. Explicit env var
   if (process.env.KEEPER_PRIVATE_KEY) {
-    return process.env.KEEPER_PRIVATE_KEY.trim();
+    const raw = process.env.KEEPER_PRIVATE_KEY.trim();
+    return raw.startsWith('0x') ? raw : `0x${raw}`;
   }
 
   // 2. Secret file path
   if (process.env.KEEPER_PRIVATE_KEY_FILE && fs.existsSync(process.env.KEEPER_PRIVATE_KEY_FILE)) {
-    return fs.readFileSync(process.env.KEEPER_PRIVATE_KEY_FILE, 'utf-8').trim();
+    const raw = fs.readFileSync(process.env.KEEPER_PRIVATE_KEY_FILE, 'utf-8').trim();
+    return raw.startsWith('0x') ? raw : `0x${raw}`;
   }
 
   // 3. Fallback to root PRIVATE_KEY (for testing/local development)
   if (process.env.PRIVATE_KEY) {
-    return process.env.PRIVATE_KEY.trim();
+    const raw = process.env.PRIVATE_KEY.trim();
+    return raw.startsWith('0x') ? raw : `0x${raw}`;
   }
 
   // Default dummy private key (will validate hex format)
@@ -79,6 +99,7 @@ function resolvePrivateKey(): string {
 }
 
 export function loadConfig(cliArgs: string[] = process.argv.slice(2)): RuntimeConfig {
+  loadEnvFiles();
   const deployment = findDeploymentJson();
 
   // Parse command line flags
@@ -144,8 +165,12 @@ export function loadConfig(cliArgs: string[] = process.argv.slice(2)): RuntimeCo
     port: Number(parsedCliValues.port || process.env.PORT || 3001),
     host: process.env.HOST || '0.0.0.0',
     webOrigin: process.env.WEB_ORIGIN || 'http://localhost:3000',
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-    telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME || 'ballast_alert_bot',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || process.env.TG_TOKEN,
+    telegramBotUsername: (
+      process.env.TELEGRAM_BOT_USERNAME ||
+      process.env.TG_USERNAME ||
+      'BALLASTBTC_bot'
+    ).replace('@', ''),
     logLevel: ((parsedCliValues['log-level'] as string) || process.env.LOG_LEVEL || 'info') as
       | 'fatal'
       | 'error'
