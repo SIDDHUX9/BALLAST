@@ -4,8 +4,8 @@ test.describe('Wallet Integration & Connect Modal E2E', () => {
   test('landing page header renders wallet button and network chip', async ({ page }) => {
     await page.goto('/');
 
-    // Verify network chip shows Mezo Matsnet 31611
-    const networkChip = page.locator('text=Mezo Matsnet');
+    // Verify network chip shows Mezo Matsnet
+    const networkChip = page.getByText('Mezo Matsnet', { exact: true }).first();
     await expect(networkChip).toBeVisible();
 
     // Verify Connect Wallet button is present in header

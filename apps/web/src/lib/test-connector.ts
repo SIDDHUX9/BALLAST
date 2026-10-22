@@ -38,7 +38,27 @@ export function getE2EBurnerWallet() {
           return 31611;
         },
         async getProvider() {
-          return null;
+          const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545';
+          return {
+            async request({ method, params }: { method: string; params?: any[] }) {
+              if (method === 'eth_accounts' || method === 'eth_requestAccounts') {
+                return ['0x90F79bf6EB2c4f870365E785982E1f101E93b906'];
+              }
+              if (method === 'eth_chainId') {
+                return '0x7b7b';
+              }
+              const res = await fetch(rpcUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+              });
+              const data = await res.json();
+              if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+              return data.result;
+            },
+            on: () => {},
+            removeListener: () => {},
+          };
         },
         async isAuthorized() {
           return true;

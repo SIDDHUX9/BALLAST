@@ -20,7 +20,7 @@ import xverseIcon from '@mezo-org/orangekit/dist/src/wallet/xverse/icon.js';
 export const WALLET_CONNECT_PROJECT_ID =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || '21fef48091f12692cad574a6f7753643';
 
-const RPC_URL = 'https://rpc.test.mezo.org';
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.test.mezo.org';
 const CHAIN_ID = 31611;
 
 /**
