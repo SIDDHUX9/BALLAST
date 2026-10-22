@@ -27,6 +27,8 @@ coverage/
 *.lcov
 lcov.info
 lighthouse-report.json
+test-results/
+playwright-report/
 
 # Logs
 *.log
