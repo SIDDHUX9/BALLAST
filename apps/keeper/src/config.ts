@@ -27,6 +27,9 @@ export const ConfigSchema = z.object({
   dbPath: z.string().default('ballast-keeper.db'),
   port: z.number().int().min(1024).max(65535).default(3001),
   host: z.string().default('0.0.0.0'),
+  webOrigin: z.string().default('http://localhost:3000'),
+  telegramBotToken: z.string().optional(),
+  telegramBotUsername: z.string().default('ballast_alert_bot'),
   logLevel: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 });
 
@@ -140,6 +143,9 @@ export function loadConfig(cliArgs: string[] = process.argv.slice(2)): RuntimeCo
     dbPath: (parsedCliValues['db-path'] as string) || process.env.KEEPER_DB_PATH || 'ballast-keeper.db',
     port: Number(parsedCliValues.port || process.env.PORT || 3001),
     host: process.env.HOST || '0.0.0.0',
+    webOrigin: process.env.WEB_ORIGIN || 'http://localhost:3000',
+    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+    telegramBotUsername: process.env.TELEGRAM_BOT_USERNAME || 'ballast_alert_bot',
     logLevel: ((parsedCliValues['log-level'] as string) || process.env.LOG_LEVEL || 'info') as
       | 'fatal'
       | 'error'

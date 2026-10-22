@@ -8,7 +8,12 @@ import {
   formatEther,
 } from 'viem';
 import type { Logger } from 'pino';
-import { BallastVaultAbi } from '@ballast/shared';
+import {
+  BallastVaultAbi,
+  computeLiquidationPrice,
+  computeAbsorptionCapacity,
+  PRECISION,
+} from '@ballast/shared';
 import type { KeeperDatabase } from './db.js';
 import type { RuntimeConfig } from './config.js';
 import type { KeeperMetrics } from './metrics.js';
@@ -21,6 +26,8 @@ import {
   CooldownTracker,
   CircuitBreaker,
 } from './defense-logic.js';
+import { AlertManager } from './telegram/alerts.js';
+import { MINIMAL_TROVE_MANAGER_ABI } from './telegram/types.js';
 import type { CheckDefenseOutput, DefenseRecord, VaultRule } from './types.js';
 
 export interface KeeperEngineState {
@@ -43,6 +50,7 @@ export class KeeperEngine {
   public earlyWarningService: EarlyWarningService;
   public cooldownTracker: CooldownTracker;
   public circuitBreaker: CircuitBreaker;
+  public alertManager: AlertManager;
   private logger: Logger;
 
   private isRunning: boolean = false;
@@ -81,6 +89,7 @@ export class KeeperEngine {
     this.earlyWarningService = new EarlyWarningService(this.db);
     this.cooldownTracker = new CooldownTracker(this.config.vaultCooldownMs);
     this.circuitBreaker = new CircuitBreaker(this.config.circuitBreakerMaxFailures);
+    this.alertManager = new AlertManager(this.db);
 
     if (!this.config.dryRun) {
       try {
@@ -247,6 +256,13 @@ export class KeeperEngine {
             Number(blockNumber),
           );
 
+          // Evaluate real Telegram alerts for linked users
+          try {
+            await this.evaluateVaultAlerts(vaultAddr, currentICR, defendable);
+          } catch (alertErr) {
+            this.logger.debug({ vault: vaultAddr, alertErr }, 'Error evaluating alerts for vault');
+          }
+
           if (defendable) {
             defendableVaults.push({
               vault: vaultAddr,
@@ -277,6 +293,131 @@ export class KeeperEngine {
       this.metrics.incrementGeneralFailure();
     } finally {
       this.recordCycleLatency(cycleStart);
+    }
+  }
+
+  private async evaluateVaultAlerts(
+    vault: Address,
+    currentICR: bigint,
+    defendable: boolean,
+  ): Promise<void> {
+    const linkedUsers = this.db.getTelegramUsersForVault(vault);
+    if (linkedUsers.length === 0) return;
+
+    const publicClient = this.rpcManager.getPublicClient();
+
+    // Fetch rule, reserves, trove, and price
+    const [ruleRes, musdReserve, btcReserve, trove] = await Promise.all([
+      publicClient.readContract({
+        address: vault,
+        abi: BallastVaultAbi,
+        functionName: 'rule',
+      }) as Promise<[boolean, bigint, bigint, number]>,
+      publicClient.readContract({
+        address: vault,
+        abi: BallastVaultAbi,
+        functionName: 'musdReserve',
+      }) as Promise<bigint>,
+      publicClient.readContract({
+        address: vault,
+        abi: BallastVaultAbi,
+        functionName: 'btcReserve',
+      }) as Promise<bigint>,
+      publicClient.readContract({
+        address: this.config.troveManagerAddress,
+        abi: MINIMAL_TROVE_MANAGER_ABI,
+        functionName: 'Troves',
+        args: [vault],
+      }) as Promise<[bigint, bigint, bigint, number]>,
+    ]);
+
+    const debt = trove[0];
+    const coll = trove[1];
+    const troveStatus = trove[3];
+
+    // Check position ended (2: closedByOwner, 3: closedByLiquidation, 4: closedByRedemption)
+    if (troveStatus === 2) {
+      this.alertManager.emitPositionEndedAlert({ vault, status: 'closedByOwner' });
+    } else if (troveStatus === 3) {
+      this.alertManager.emitPositionEndedAlert({ vault, status: 'closedByLiquidation' });
+    } else if (troveStatus === 4) {
+      this.alertManager.emitPositionEndedAlert({ vault, status: 'closedByRedemption' });
+    }
+
+    // Only evaluate warning & capacity if trove is active
+    if (troveStatus === 1) {
+      const triggerIcr = ruleRes[1];
+      const triggerIcrPct = Number((triggerIcr * 10000n) / PRECISION) / 100;
+      const mcr = 1100000000000000000n; // 110%
+      const liquidationPrice = computeLiquidationPrice(coll, debt, mcr);
+
+      // Warning alert for each linked user's watch level
+      for (const user of linkedUsers) {
+        const watchLevel = user.watchPercent ?? triggerIcrPct + 10.0;
+        this.alertManager.evaluateWarningAlert({
+          vault,
+          currentIcr: currentICR,
+          watchLevelPercent: watchLevel,
+          triggerIcrPercent: triggerIcrPct,
+          liquidationPrice,
+        });
+      }
+
+      // Reserve low alert
+      let btcPrice = 0n;
+      try {
+        btcPrice = (await publicClient.readContract({
+          address: this.config.priceFeedAddress,
+          abi: [
+            {
+              type: 'function',
+              name: 'fetchPrice',
+              inputs: [],
+              outputs: [{ name: '', type: 'uint256' }],
+              stateMutability: 'view',
+            },
+          ],
+          functionName: 'fetchPrice',
+        })) as bigint;
+      } catch {
+        // Price feed fallback
+      }
+
+      const capacity = computeAbsorptionCapacity(
+        coll,
+        debt,
+        btcPrice,
+        triggerIcr,
+        musdReserve,
+        btcReserve,
+      );
+
+      this.alertManager.evaluateReserveLowAlert({
+        vault,
+        currentIcr: currentICR,
+        absorbableDropPercent: capacity.absorbableDropPercent,
+        musdReserve,
+        btcReserve,
+      });
+
+      // Defense impossible check
+      if (defendable) {
+        if (musdReserve === 0n && btcReserve === 0n) {
+          this.alertManager.emitDefenseFailedAlert({
+            vault,
+            currentIcr: currentICR,
+            triggerIcrPercent: triggerIcrPct,
+            reason: 'Defense reserves are empty',
+          });
+        } else if (this.circuitBreaker.checkTripped()) {
+          this.alertManager.emitDefenseFailedAlert({
+            vault,
+            currentIcr: currentICR,
+            triggerIcrPercent: triggerIcrPct,
+            reason: 'Keeper circuit breaker is open',
+          });
+        }
+      }
     }
   }
 
@@ -555,6 +696,37 @@ export class KeeperEngine {
         this.circuitBreaker.recordSuccess();
         this.metrics.incrementSuccess();
 
+        // Emit defense executed alert to Telegram subscribers
+        try {
+          const [remainingMusd, remainingBtc] = await Promise.all([
+            publicClient.readContract({
+              address: vault,
+              abi: BallastVaultAbi,
+              functionName: 'musdReserve',
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: vault,
+              abi: BallastVaultAbi,
+              functionName: 'btcReserve',
+            }) as Promise<bigint>,
+          ]);
+
+          this.alertManager.emitDefenseExecutedAlert({
+            vault,
+            oldIcr: BigInt(oldIcrStr),
+            newIcr: BigInt(newIcrStr),
+            musdRepaid: BigInt(musdRepaidStr),
+            btcAdded: BigInt(btcAddedStr),
+            musdTip: BigInt(musdTipStr),
+            btcTip: BigInt(btcTipStr),
+            remainingMusd,
+            remainingBtc,
+            txHash,
+          });
+        } catch (alertErr) {
+          this.logger.debug({ vault, alertErr }, 'Failed to emit defense executed alert');
+        }
+
         this.logger.info(
           {
             vault,
@@ -579,14 +751,26 @@ export class KeeperEngine {
 
   private recordFailure(vault: Address, errorMsg: string): void {
     this.metrics.incrementDefenseFailure();
+    const wasTripped = this.circuitBreaker.checkTripped();
     const tripped = this.circuitBreaker.recordFailure();
 
-    if (tripped) {
+    if (tripped && !wasTripped) {
       this.metrics.setCircuitBreaker(true);
       this.logger.error(
         { consecutiveFailures: this.circuitBreaker.getFailuresCount() },
         'CRITICAL: Circuit breaker tripped due to consecutive failures. Defense execution paused!',
       );
+
+      // Operational alert: keeper paused
+      try {
+        const vaults = this.db.getAllVaults().map((v) => v.address);
+        this.alertManager.emitOperationalAlert(
+          { type: 'paused', reason: 'Abnormal failures tripped circuit breaker' },
+          vaults,
+        );
+      } catch {
+        // ignore
+      }
     }
   }
 

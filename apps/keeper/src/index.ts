@@ -50,12 +50,41 @@ async function main() {
 
   const engine = new KeeperEngine(config, db, metrics, rpcManager, logger);
 
+  // Initialize Telegram Bot & Outbox Worker if token is configured
+  let botService: import('./telegram/bot.js').TelegramBotService | undefined;
+  let outboxWorker: import('./telegram/outbox.js').NotificationOutboxWorker | undefined;
+
+  if (config.telegramBotToken) {
+    const { TelegramBotService } = await import('./telegram/bot.js');
+    const { NotificationOutboxWorker } = await import('./telegram/outbox.js');
+
+    botService = new TelegramBotService({
+      token: config.telegramBotToken,
+      db,
+      publicClient: rpcManager.getPublicClient(),
+      factoryAddress: config.factoryAddress,
+      logger,
+    });
+
+    outboxWorker = new NotificationOutboxWorker(db, botService, logger);
+
+    await botService.start();
+    outboxWorker.start();
+    logger.info('Telegram Bot service and Notification Outbox worker active');
+  } else {
+    logger.info(
+      'TELEGRAM_BOT_TOKEN not provided; Telegram bot polling and outbox delivery are dormant',
+    );
+  }
+
   const server = buildServer(
     {
       engine,
       metrics,
       rpcManager,
       db,
+      config,
+      botService,
     },
     config.logLevel,
   );
@@ -68,6 +97,8 @@ async function main() {
     logger.info({ signal }, 'Received termination signal, shutting down gracefully...');
 
     try {
+      if (outboxWorker) outboxWorker.stop();
+      if (botService) await botService.stop();
       await engine.stop();
       await server.close();
       db.close();
@@ -85,7 +116,7 @@ async function main() {
   try {
     await server.listen({ port: config.port, host: config.host });
     logger.info(
-      `Fastify server listening on http://${config.host}:${config.port} (/healthz, /metrics, /signals, /defenses)`,
+      `Fastify server listening on http://${config.host}:${config.port} (/healthz, /metrics, /signals, /defenses, /api/telegram/*)`,
     );
 
     await engine.start();
