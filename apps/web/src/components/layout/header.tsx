@@ -95,38 +95,36 @@ export function Header({ walletSlot }: HeaderProps) {
         </nav>
 
         {/* Action Controls & Wallet Slot */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* Theme Toggle Button */}
           <button
             type="button"
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            className="w-8 h-8 rounded-sm border border-hairline bg-paper-surface flex items-center justify-center text-ink-muted hover:text-ink hover:border-hairline-strong transition-colors focus-visible:outline-none"
+            className="w-8 h-8 rounded-full border border-hairline bg-paper-surface flex items-center justify-center text-ink-muted hover:text-ink hover:border-hairline-strong transition-colors focus-visible:outline-none"
           >
             {theme === 'light' ? (
-              <Moon className="w-4 h-4 stroke-[1.5]" />
+              <Moon className="w-3.5 h-3.5 stroke-[1.5]" />
             ) : (
-              <Sun className="w-4 h-4 stroke-[1.5]" />
+              <Sun className="w-3.5 h-3.5 stroke-[1.5]" />
             )}
           </button>
-
-          {/* Notifications Center */}
-          <NotificationCenter />
 
           {/* App Entry or Wallet Slot */}
           {walletSlot ? (
             walletSlot
           ) : isApp ? (
-            <WalletButton />
-          ) : (
-            <div className="flex items-center gap-2">
+            <>
+              <NotificationCenter />
               <WalletButton />
-              <Link href="/app">
-                <Button size="sm" variant="primary">
-                  Open App
-                </Button>
-              </Link>
-            </div>
+            </>
+          ) : (
+            <Link href="/app/overview">
+              <button className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-xs hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow">
+                <span>Launch App</span>
+                <span className="text-[11px] font-mono">↗</span>
+              </button>
+            </Link>
           )}
         </div>
       </div>

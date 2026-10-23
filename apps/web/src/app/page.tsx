@@ -148,7 +148,7 @@ export default function LandingPage() {
 
                 {/* Primary Editorial Title */}
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-ink leading-[1.06]">
-                  Lend<br />
+                  Protect<br />
                   Bitcoin<br />
                   <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C] transition-colors">
                     with clarity.
@@ -157,8 +157,7 @@ export default function LandingPage() {
 
                 {/* Narrative Lead Paragraph */}
                 <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
-                  Ballast helps MUSD borrowers understand liquidation risk, model market scenarios,
-                  and keep a deliberate buffer between their position and the edge.
+                  Ballast protects MUSD borrowers from sudden liquidation and redemption. Deploy a personal smart vault, maintain an automated defense reserve, and keep a deliberate buffer between your position and the edge.
                 </p>
 
                 {/* CTA Action Buttons */}
@@ -199,10 +198,10 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
-                        Scenario analysis
+                        Automated defense
                       </h4>
                       <p className="text-xs font-sans text-ink-muted mt-0.5">
-                        Model market moves
+                        Permissionless keepers
                       </p>
                     </div>
                   </div>
@@ -216,7 +215,7 @@ export default function LandingPage() {
                         Non-custodial
                       </h4>
                       <p className="text-xs font-sans text-ink-muted mt-0.5">
-                        Your position, your control
+                        Your keys, your control
                       </p>
                     </div>
                   </div>
@@ -324,8 +323,7 @@ export default function LandingPage() {
                 </h2>
 
                 <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
-                  Volatility, sudden market moves, and complex parameters make it hard to know when
-                  you’re really at risk. Guessing leads to liquidations.
+                  Volatility, sudden market moves, and network congestion make it hard to defend when you’re really at risk. Manual top-ups fail under pressure, and guessing leads to liquidations.
                 </p>
 
                 <div className="pt-2">
@@ -333,7 +331,7 @@ export default function LandingPage() {
                     href="#simulator"
                     className="inline-flex items-center gap-2 text-sm font-sans font-semibold text-ink hover:text-[#C84E29] transition-colors group"
                   >
-                    <span>See the problem in action</span>
+                    <span>See the problem</span>
                     <ArrowRight className="w-4 h-4 stroke-[2] group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
