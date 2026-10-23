@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
+import { Fraunces, Instrument_Sans, JetBrains_Mono, Caveat } from 'next/font/google';
 import './globals.css';
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_DESCRIPTION } from '@ballast/shared';
 import { ThemeProvider } from '../components/theme-provider';
@@ -27,6 +27,12 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+const caveat = Caveat({
+  subsets: ['latin'],
+  variable: '--font-handwritten',
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: `${BRAND_NAME} — ${BRAND_TAGLINE}`,
   description: BRAND_DESCRIPTION,
@@ -37,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${fraunces.variable} ${instrumentSans.variable} ${jetbrainsMono.variable}`}
+      className={`${fraunces.variable} ${instrumentSans.variable} ${jetbrainsMono.variable} ${caveat.variable}`}
     >
       <head>
         <script

@@ -30,10 +30,10 @@ export function Header({ walletSlot }: HeaderProps) {
   ];
 
   const landingNavItems = [
-    { href: '#how-it-works', label: 'Mechanics' },
-    { href: '#calculator', label: 'Waterline Calculator' },
-    { href: '#honesty', label: 'Boundaries & Honesty' },
-    { href: '/whitepaper', label: 'Whitepaper' },
+    { href: '#how-it-works', label: 'Protocol' },
+    { href: '#simulator', label: 'Risk' },
+    { href: '/whitepaper', label: 'Docs' },
+    { href: '#belief', label: 'About' },
   ];
 
   return (

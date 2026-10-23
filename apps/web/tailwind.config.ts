@@ -45,6 +45,7 @@ const config: Config = {
         serif: ['var(--font-serif)', 'Fraunces', 'Georgia', 'serif'],
         sans: ['var(--font-sans)', 'Instrument Sans', '-apple-system', 'sans-serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
+        hand: ['var(--font-handwritten)', 'Caveat', 'cursive'],
       },
       maxWidth: {
         container: '1200px',
