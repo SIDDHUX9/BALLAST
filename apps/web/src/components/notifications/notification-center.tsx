@@ -1,17 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Bell, CheckCircle2, AlertTriangle, AlertCircle, Info, ExternalLink, Trash2 } from 'lucide-react';
 import { useNotifications } from './notifications-provider';
 import { PopoverRoot, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { BRAND_URLS } from '@ballast/shared';
 
 export function NotificationCenter() {
-  const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAllRead, clearAll } = useNotifications();
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
     if (newOpen && unreadCount > 0) {
       markAllRead();
     }
@@ -25,7 +23,7 @@ export function NotificationCenter() {
   };
 
   return (
-    <PopoverRoot open={open} onOpenChange={handleOpenChange}>
+    <PopoverRoot onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"

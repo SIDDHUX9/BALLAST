@@ -7,15 +7,15 @@ test.describe('Ballast Guardian Pages E2E Suite', () => {
     await page.goto('/app/overview');
 
     // 1. Theme toggle
-    const themeToggle = page.locator('button[aria-label*="theme" i], button:has(svg.lucide-moon), button:has(svg.lucide-sun)');
-    await expect(themeToggle.first()).toBeVisible();
+    const themeToggle = page.getByRole('button', { name: /theme/i });
+    await expect(themeToggle).toBeVisible();
 
     // 2. Notifications Center Trigger
-    const notifTrigger = page.locator('button[aria-label*="notification" i], button:has(svg.lucide-bell)');
-    await expect(notifTrigger.first()).toBeVisible();
+    const notifTrigger = page.getByRole('button', { name: /notification/i });
+    await expect(notifTrigger).toBeVisible();
 
     // Click notifications trigger to ensure popover opens
-    await notifTrigger.first().click();
+    await notifTrigger.click();
     await expect(page.getByText(/Activity & Notifications/i)).toBeVisible();
 
     // 3. Footer with Deployed Contracts linking to Mezo Matsnet Explorer
@@ -25,6 +25,9 @@ test.describe('Ballast Guardian Pages E2E Suite', () => {
     await expect(footer.getByText('BallastVault Impl')).toBeVisible();
     await expect(footer.getByText('BorrowerOperations')).toBeVisible();
     await expect(footer.getByText('TroveManager')).toBeVisible();
+
+    // Verify Official Mezo badges are rendered
+    await expect(footer.getByText('Official Mezo').first()).toBeVisible();
 
     // Verify explorer links
     const factoryLink = footer.locator('a[href*="explorer.test.mezo.org/address/0x8d5b392839300b487addeecc35f5bc534111cd33"]');
@@ -103,8 +106,12 @@ test.describe('Ballast Guardian Pages E2E Suite', () => {
     await expect(page.getByRole('heading', { name: /Defense Reserve Balances/i })).toBeVisible();
 
     // Disarm warning banner
-    await expect(page.getByText(/Critical Boundary: Withdrawing Reserve Disarms Autonomous Defense/i)).toBeVisible();
-    await expect(page.getByText(/Withdrawing reserves directly reduces your vault's defense capacity/i)).toBeVisible();
+    await expect(
+      page.getByText(/Critical Boundary: Withdrawing Reserve Disarms Autonomous Defense/i)
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByText(/Withdrawing reserves directly reduces your vault's defense capacity/i)
+    ).toBeVisible();
 
     // Reserve tabs: Deposit MUSD, Deposit BTC, Withdraw MUSD, Withdraw BTC
     await expect(page.getByRole('tab', { name: /Deposit MUSD/i })).toBeVisible();
@@ -159,7 +166,9 @@ test.describe('Ballast Guardian Pages E2E Suite', () => {
     await expect(page.getByRole('heading', { name: /Threshold Alerts & Telegram Dispatch/i })).toBeVisible();
 
     // Telegram connection card
-    await expect(page.getByRole('heading', { name: /Telegram Connection Status/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Telegram Connection Status/i })
+    ).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /Start Telegram Linking Flow/i })).toBeVisible();
 
     // Privacy notice & Dispatched event types

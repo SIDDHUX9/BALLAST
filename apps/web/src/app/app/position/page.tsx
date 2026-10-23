@@ -31,6 +31,7 @@ import { Skeleton } from '../../../components/ui/skeleton';
 import { DataRow } from '../../../components/ui/data-row';
 import { StatusBadge } from '../../../components/ui/status-badge';
 import { AddressChip } from '../../../components/ui/address-chip';
+import { MezoBadge } from '../../../components/ui/mezo-badge';
 import { TxStatus } from '../../../components/ui/tx-status';
 import {
   Coins,
@@ -534,9 +535,12 @@ export default function PositionPage() {
         <div className="lg:col-span-5 space-y-6">
           <div className="border border-hairline bg-paper-raised p-6 rounded-sm space-y-4">
             <div className="flex items-center justify-between border-b border-hairline pb-2">
-              <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-ink">
-                Current On-Chain State
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-ink">
+                  Current On-Chain State
+                </h3>
+                <MezoBadge size="xs" variant="pill" />
+              </div>
               <span className="text-[11px] font-mono text-ink-muted">
                 BTC Price: ${position.price ? (Number(position.price) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 0 }) : '—'}
               </span>

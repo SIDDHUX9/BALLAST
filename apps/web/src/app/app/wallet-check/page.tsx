@@ -13,6 +13,8 @@ import { EmptyState } from '../../../components/ui/empty-state';
 import { Stat } from '../../../components/ui/stat';
 import { DataRow } from '../../../components/ui/data-row';
 import { StatusBadge } from '../../../components/ui/status-badge';
+import { AddressChip } from '../../../components/ui/address-chip';
+import { MezoBadge } from '../../../components/ui/mezo-badge';
 import { TxStatus } from '../../../components/ui/tx-status';
 import { WalletButton } from '../../../components/wallet/wallet-button';
 import { ArrowLeft, ShieldCheck, Check, Copy, ExternalLink, Activity, Send } from 'lucide-react';
@@ -302,10 +304,13 @@ export default function WalletCheckPage() {
           <div className="flex items-center gap-2">
             <Activity className="w-4 h-4 text-ink stroke-[1.5]" />
             <h2 className="font-serif font-semibold text-base text-ink">On-Chain Trove Position</h2>
+            <MezoBadge size="xs" variant="pill" />
           </div>
-          <span className="text-xs font-mono text-ink-muted">
-            TroveManager: {MATSNET_PROTOCOL_ADDRESSES.troveManager.slice(0, 8)}...
-          </span>
+          <AddressChip
+            address={MATSNET_PROTOCOL_ADDRESSES.troveManager}
+            label="TroveManager"
+            size="sm"
+          />
         </div>
 
         <div className="divide-y divide-hairline">

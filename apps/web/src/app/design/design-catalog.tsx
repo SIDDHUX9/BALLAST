@@ -22,6 +22,7 @@ import { Table } from '../../components/ui/table';
 import { Skeleton } from '../../components/ui/skeleton';
 import { EmptyState } from '../../components/ui/empty-state';
 import { AddressChip } from '../../components/ui/address-chip';
+import { MezoBadge } from '../../components/ui/mezo-badge';
 import { TxStatus } from '../../components/ui/tx-status';
 import { Banner } from '../../components/ui/banner';
 import { HealthGauge } from '../../components/ui/health-gauge';
@@ -354,7 +355,7 @@ export function DesignCatalog() {
                 />
               </div>
 
-              {/* Status Badges */}
+              {/* Status & Verification Badges */}
               <div className="p-4 border border-hairline bg-paper-raised rounded-sm flex flex-wrap items-center gap-4">
                 <span className="text-xs font-mono text-ink-muted uppercase mr-2">
                   Status Badges:
@@ -363,6 +364,14 @@ export function DesignCatalog() {
                 <StatusBadge status="Watch" />
                 <StatusBadge status="Danger" />
                 <StatusBadge status="Disarmed" />
+
+                <span className="text-xs font-mono text-ink-muted uppercase ml-4 mr-2">
+                  Official Mezo Badges:
+                </span>
+                <MezoBadge size="xs" variant="pill" />
+                <MezoBadge size="sm" variant="pill" />
+                <MezoBadge size="md" variant="pill" />
+                <MezoBadge size="xs" variant="compact" />
               </div>
 
               {/* DataRows */}
