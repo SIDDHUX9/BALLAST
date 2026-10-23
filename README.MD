@@ -10,19 +10,25 @@ When an individual collateral ratio (ICR) falls below a user-configured safety t
 
 This repository is managed with `pnpm` workspaces:
 
-- `apps/web`: Next.js 15 App Router web application with strict TypeScript and Tailwind CSS.
-- `apps/keeper`: Autonomous Node.js keeper bot built with Fastify, viem, pino, zod, and better-sqlite3.
+- `apps/web`: Next.js 15 App Router web application with strict TypeScript, Tailwind CSS, and Convex client.
+- `apps/keeper`: Autonomous keeper core logic (`src/core`) with pure dependency injection (RPC client, wallet client, store interface).
+- `convex/`: Serverless 24/7 backend running on Convex Free Tier:
+  - `schema.ts`: Typed tables mirroring SQLite (`keeperState`, `vaults`, `snapshots`, `defenses`, `errors`, `linkTokens`, `telegramUsers`, `signatureNonces`, `alertStates`, `notificationOutbox`, `rateLimits`).
+  - `crons.ts`: 30-second automated monitor loop (`crons.interval('monitor', { seconds: 30 })`) and hourly data pruning.
+  - `keeper.ts`: Atomic compare-and-set lease coordination, batch commit, pending transaction receipt verification, and Node.js tick action.
+  - `telegram.ts`: Ephemeral single-use link tokens, EIP-191 & ERC-1271 wallet signature authentication, rate limiting, and scheduled outbox worker with exponential backoff.
+  - `http.ts`: `GET /healthz` and `POST /telegram/webhook` (with secret-token validation).
 - `packages/contracts`: Foundry smart contract project (Solidity 0.8.24, London EVM target).
-- `packages/shared`: Shared pure math library, protocol addresses, ABIs, and Zod schemas.
-- `docs/`: Technical specifications (`SPEC.md`), threat model (`THREAT_MODEL.md`), decisions log (`DECISIONS.md`), protocol notes (`PROTOCOL_NOTES.md`), and changelog (`CHANGELOG.md`).
-- `scripts/`: Operational, verification, and reconnaissance scripts.
+- `packages/shared`: Shared pure math library, protocol addresses, ABIs, brand constants, and Zod schemas.
+- `docs/`: Technical specifications (`SPEC.md`), threat model (`THREAT_MODEL.md`), keeper budget arithmetic (`KEEPER_BUDGET.md`), decisions log (`DECISIONS.md`), and protocol notes (`PROTOCOL_NOTES.md`).
+- `scripts/`: Operational and verification scripts, including `defend-manually.ts` and `set-webhook.ts`.
 
 ---
 
 ## Non-Negotiable Engineering Rules
 
 This repository strictly follows the guidelines in [AGENTS.md](./AGENTS.md):
-- **NO MOCKS in product code**: Every figure rendered comes from verified on-chain reads or mathematical calculations.
+- **NO MOCKS in product code**: Every figure rendered comes from verified on-chain reads or pure mathematical calculations.
 - **Test-only doubles isolated**: Test doubles must never ship to production. A dedicated CI check validates bundle cleanliness.
 - **Derived protocol constants**: Interfaces and addresses are derived directly from Mezo's source repositories and verified via RPC.
 - **Zero secrets**: Private keys come from keystores or environment managers; `.env.example` templates are maintained.
@@ -54,43 +60,42 @@ The script:
 
 ---
 
-## Autonomous Keeper Bot (`apps/keeper`)
+## Serverless 24/7 Keeper (`convex/`)
 
-The repository includes a production-ready, autonomous keeper service:
+The keeper runs as a serverless background worker on Convex's free tier, requiring no always-on server:
+
+- **Cadence**: 30s cron interval (`crons.interval('monitor', { seconds: 30 })`).
+- **Atomic Lease**: Compare-and-set mutation on `keeperState` ensures overlapping cron ticks exit immediately and only one worker ever uses the keeper nonce.
+- **Free-Tier Budget**: 25.9% function call quota (259,200 / 1,000,000 monthly calls) and < 1 MB storage footprint. See [docs/KEEPER_BUDGET.md](./docs/KEEPER_BUDGET.md) for full arithmetic.
+- **Health Endpoint**: `GET https://<deployment>.convex.site/healthz` returns last tick age, vault count, circuit breaker status, and keeper balance with zero secrets exposed.
+- **Telegram Webhook**: `POST https://<deployment>.convex.site/telegram/webhook` authenticated via `X-Telegram-Bot-Api-Secret-Token`.
 
 ```bash
-# Run keeper in dry-run mode (indexes events, computes hints, simulates eth_calls)
-pnpm --filter @ballast/keeper dev -- --dry-run
+# Start Convex development deployment
+npx convex dev
 
-# Run keeper with altruistic mode (ignores profit margin for demos)
-pnpm --filter @ballast/keeper dev -- --altruistic
+# Execute a single keeper tick manually
+npx convex run keeper:tick
 
-# Run tests
-pnpm --filter @ballast/keeper test
+# Register Telegram Webhook
+npx tsx scripts/set-webhook.ts --url https://<deployment>.convex.site
 ```
-
-### Keeper Architecture:
-- **Discovery**: Chunked indexing of `VaultCreated` events from deploy block with confirmation depth and SQLite cursor persistence.
-- **Monitor Loop**: 15s interval batch multicalls to `checkDefense()`, with off-chain `SortedTroves` hints and `eth_call` simulations.
-- **Profitability**: Defense transactions are only broadcast if expected tips cover estimated gas costs plus configurable profit margin (`--altruistic` bypasses margin).
-- **Safety**: Circuit breaker after consecutive failures, low-balance keeper alerts, RPC failover list with health checks, per-vault cooldown, and pre-flight state re-checks.
-- **Observability**: Fastify `/healthz` (RPC status, block age, cycle timestamps) and Prometheus text `/metrics`.
 
 ---
 
-## Quickstart
+## Quickstart & Verification
 
 ```bash
-# Install all workspace dependencies
+# Install workspace dependencies
 pnpm install
 
 # Build shared packages and apps
 pnpm build
 
-# Run unit tests across packages
+# Run unit tests, Anvil fork tests, and Convex tests
 pnpm test
 
-# Run TypeScript typechecks
+# Run TypeScript typechecks across all packages
 pnpm typecheck
 
 # Run linters
@@ -102,5 +107,3 @@ pnpm lint
 ## License
 
 [MIT](./LICENSE)
-
-##THIS IS A BACKUP COMMIT BECAUSE WE ARE CHANGING THIS TO CONVEX SO IT KEEP'S RUNNING EVEN WHEN MY SYSTEM IS OFF AND NO REQUESTS ARE RECIEVED

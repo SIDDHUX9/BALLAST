@@ -7,7 +7,6 @@ import {
 import { KeeperDatabase } from '../src/db.js';
 import { EarlyWarningService } from '../src/signals.js';
 import { KeeperMetrics } from '../src/metrics.js';
-import { buildServer } from '../src/server.js';
 import { parseEther } from 'viem';
 
 describe('Keeper Decision Logic Unit Tests', () => {

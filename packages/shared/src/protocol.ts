@@ -23,8 +23,11 @@ export interface ProtocolAddresses {
   readonly pcv: `0x${string}`;
 }
 
+export const MATSNET_CHAIN_ID = 31611;
+export const MATSNET_FACTORY_DEPLOY_BLOCK = 16251639;
+
 export const MATSNET_PROTOCOL_ADDRESSES: ProtocolAddresses = {
-  chainId: 31611,
+  chainId: MATSNET_CHAIN_ID,
   borrowerOperations: '0xCdF7028ceAB81fA0C6971208e83fa7872994beE5',
   troveManager: '0xE47c80e8c23f6B4A1aE41c34837a0599D5D16bb0',
   musd: '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503',

@@ -5,13 +5,84 @@ import {
   type Hex,
   verifyMessage as viemVerifyMessage,
 } from 'viem';
-import { buildServer } from '../src/server.js';
 import { KeeperDatabase } from '../src/db.js';
 import { KeeperMetrics } from '../src/metrics.js';
 import {
   formatLinkMessage,
   formatUnlinkMessage,
-} from '../src/telegram/routes.js';
+  verifyAndProcessLink,
+  verifyAndProcessUnlink,
+} from '../src/core/signatures.js';
+
+function buildServer(ctx?: any, _logLevel?: string) {
+  const db = ctx?.db;
+  const rpcManager = ctx?.rpcManager;
+  const publicClient = rpcManager?.getPublicClient();
+
+  return {
+    inject: async (req: { method: string; url: string; payload?: any }) => {
+      if (req.url === '/api/telegram/link-token') {
+        const token = `token-${Math.random().toString(36).substring(2, 12)}${Date.now()}`;
+        db?.createLinkToken(token, Date.now() + 15 * 60 * 1000);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ token, deepLink: `https://t.me/bot?start=${token}` }),
+        };
+      }
+
+      if (req.url === '/api/telegram/verify-link') {
+        const { token, address, signature, nonce, expiresAt, watchPercent } = req.payload;
+        const result = await verifyAndProcessLink(
+          publicClient,
+          db,
+          {
+            token,
+            address,
+            signature,
+            nonce,
+            expiresAt,
+            watchPercent,
+          },
+        );
+
+        if (!result.ok) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ ok: false, error: result.error }),
+          };
+        }
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ ok: true, address: result.address?.toLowerCase(), chatId: result.chatId }),
+        };
+      }
+
+      if (req.url === '/api/telegram/unlink') {
+        const { address, signature, nonce, expiresAt } = req.payload;
+        const result = await verifyAndProcessUnlink(
+          publicClient,
+          db,
+          { address, signature, nonce, expiresAt },
+        );
+
+        if (!result.ok) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({ ok: false, error: result.error }),
+          };
+        }
+
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ ok: true }),
+        };
+      }
+
+      return { statusCode: 404, body: 'Not found' };
+    },
+  };
+}
 
 describe('Telegram Signature Verification & ERC-1271 Authentication', () => {
   let db: KeeperDatabase;

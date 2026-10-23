@@ -22,6 +22,7 @@ import { KeeperDatabase } from '../src/db.js';
 import { KeeperMetrics } from '../src/metrics.js';
 import { ResilientRpcManager } from '../src/rpc.js';
 import { KeeperEngine } from '../src/engine.js';
+import { runKeeperTick } from '../src/core/tick.js';
 import type { RuntimeConfig } from '../src/config.js';
 
 const MUSD_ABI = [
@@ -317,10 +318,17 @@ describe('Keeper Anvil Fork Integration Test', () => {
         logLevel: 'info',
       };
 
-      engine = new KeeperEngine(keeperConfig, db, metrics, rpcManager, logger);
+      // 8. Execute Keeper Monitor Cycle directly via src/core/tick.ts
+      const tickResult = await runKeeperTick({
+        publicClient,
+        walletClient: rpcManager.getWalletClient(),
+        store: db,
+        config: keeperConfig,
+        logger,
+      });
 
-      // 8. Execute Keeper Monitor Cycle
-      await engine.runCycle();
+      expect(tickResult.success).toBe(true);
+      expect(tickResult.defensesSucceeded).toBe(1);
 
       // 9. Assertions:
       // A) Vault should have been defended
@@ -349,9 +357,9 @@ describe('Keeper Anvil Fork Integration Test', () => {
       expect(defenses[0].vault.toLowerCase()).toBe(vaultAddress.toLowerCase());
       expect(defenses[0].status).toBe('confirmed');
 
-      // D) Metrics updated
-      expect(metrics.defensesSucceeded).toBe(1);
-      expect(metrics.defensesSent).toBe(1);
+      // D) Tick result counts
+      expect(tickResult.defensesSucceeded).toBe(1);
+      expect(tickResult.defensesAttempted).toBe(1);
     },
     120000,
   );

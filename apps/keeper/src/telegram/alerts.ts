@@ -72,7 +72,7 @@ export class AlertManager {
       ].join('\n');
 
       for (const user of users) {
-        const idempotencyKey = `warning:${vault.toLowerCase()}:${user.chatId}:${now}`;
+        const idempotencyKey = `warning:${vault.toLowerCase()}:${user.chatId}:${now}:${icrPercent.toFixed(2)}`;
         this.db.enqueueNotification(idempotencyKey, user.chatId, message);
       }
       return true;
