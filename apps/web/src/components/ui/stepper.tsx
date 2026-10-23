@@ -10,10 +10,11 @@ export interface Step {
 export interface StepperProps {
   steps: Step[];
   currentStep: number;
+  onStepClick?: (step: number) => void;
   className?: string;
 }
 
-export function Stepper({ steps, currentStep, className = '' }: StepperProps) {
+export function Stepper({ steps, currentStep, onStepClick, className = '' }: StepperProps) {
   return (
     <div className={`w-full flex flex-col md:flex-row gap-4 items-start ${className}`}>
       {steps.map((step, idx) => {
@@ -22,7 +23,13 @@ export function Stepper({ steps, currentStep, className = '' }: StepperProps) {
         const isCurrent = stepNum === currentStep;
 
         return (
-          <div key={stepNum} className="flex-1 flex items-start gap-3 w-full">
+          <div
+            key={stepNum}
+            onClick={() => onStepClick?.(stepNum)}
+            className={`flex-1 flex items-start gap-3 w-full transition-opacity ${
+              onStepClick ? 'cursor-pointer hover:opacity-80' : ''
+            }`}
+          >
             <div
               className={`w-7 h-7 rounded-sm flex items-center justify-center font-mono text-xs font-semibold shrink-0 border transition-colors ${
                 isCompleted

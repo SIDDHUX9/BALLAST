@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useBlockNumber } from 'wagmi';
 import { type Address, parseEventLogs, isAddress, zeroAddress } from 'viem';
@@ -32,8 +33,9 @@ export function useActivity(vaultAddress?: Address): UseActivityResult {
   const { data: currentBlock } = useBlockNumber({ watch: true });
 
   const query = useQuery({
-    queryKey: ['activity', vaultAddress?.toLowerCase(), Number(currentBlock ?? 0n)],
+    queryKey: ['activity', vaultAddress?.toLowerCase()],
     enabled: Boolean(publicClient && vaultAddress && isAddress(vaultAddress) && vaultAddress !== zeroAddress),
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       if (!publicClient || !vaultAddress) return [];
 
@@ -106,6 +108,12 @@ export function useActivity(vaultAddress?: Address): UseActivityResult {
     },
     staleTime: 15_000,
   });
+
+  useEffect(() => {
+    if (currentBlock) {
+      query.refetch();
+    }
+  }, [currentBlock]);
 
   return {
     activities: query.data ?? [],

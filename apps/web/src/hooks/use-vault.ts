@@ -1,5 +1,5 @@
 'use client';
-
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useBlockNumber } from 'wagmi';
 import { type Address, zeroAddress, isAddress } from 'viem';
@@ -23,8 +23,9 @@ export function useVault(owner?: Address): UseVaultResult {
   const { data: blockNumber } = useBlockNumber({ watch: true });
 
   const query = useQuery({
-    queryKey: ['vault', owner?.toLowerCase(), FACTORY_ADDRESS.toLowerCase(), Number(blockNumber ?? 0n)],
+    queryKey: ['vault', owner?.toLowerCase(), FACTORY_ADDRESS.toLowerCase()],
     enabled: Boolean(publicClient && owner && isAddress(owner)),
+    placeholderData: (previousData) => previousData,
     queryFn: async (): Promise<{ vaultAddress: Address | undefined; predictedAddress: Address | undefined; exists: boolean }> => {
       if (!publicClient || !owner) {
         return { vaultAddress: undefined, predictedAddress: undefined, exists: false };
@@ -61,6 +62,12 @@ export function useVault(owner?: Address): UseVaultResult {
     },
     staleTime: 10_000,
   });
+
+  useEffect(() => {
+    if (blockNumber) {
+      query.refetch();
+    }
+  }, [blockNumber]);
 
   return {
     vaultAddress: query.data?.vaultAddress,

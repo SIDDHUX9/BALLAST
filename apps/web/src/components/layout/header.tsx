@@ -20,7 +20,7 @@ export function Header({ walletSlot }: HeaderProps) {
   const isApp = pathname?.startsWith('/app');
 
   const appNavItems = [
-    { href: '/app', label: 'Overview' },
+    { href: '/app/overview', label: 'Overview' },
     { href: '/app/position', label: 'Position' },
     { href: '/app/rules', label: 'Rules' },
     { href: '/app/reserve', label: 'Reserve' },
@@ -68,7 +68,7 @@ export function Header({ walletSlot }: HeaderProps) {
         <nav className="hidden md:flex items-center gap-5 text-xs font-mono tracking-wider uppercase">
           {isApp
             ? appNavItems.map((item) => {
-                const active = pathname === item.href;
+                const active = pathname === item.href || (item.href === '/app/overview' && pathname === '/app');
                 return (
                   <Link
                     key={item.href}

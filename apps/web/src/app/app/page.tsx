@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAccount, usePublicClient, useSwitchChain } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import {
@@ -51,7 +52,11 @@ const WIZARD_STEPS: Step[] = [
   { title: '5. Review & Arm', description: 'Activate automated defense' },
 ];
 
-export default function OnboardingWizardPage() {
+function OnboardingWizardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedStep = searchParams?.get('step');
+
   const { address, isConnected, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const publicClient = usePublicClient();
@@ -73,12 +78,26 @@ export default function OnboardingWizardPage() {
   const writeHook = useBallastWrite();
 
   // Active Wizard Step (1 to 5)
-  const [activeStep, setActiveStep] = useState<number>(1);
-  const [stepOverridden, setStepOverridden] = useState<boolean>(false);
+  const [activeStep, setActiveStep] = useState<number>(() => {
+    const parsed = requestedStep ? parseInt(requestedStep, 10) : 1;
+    return parsed >= 1 && parsed <= 5 ? parsed : 1;
+  });
+  const [stepOverridden, setStepOverridden] = useState<boolean>(Boolean(requestedStep));
+
+  // If the user's vault is already fully configured and armed, redirect to overview dashboard
+  useEffect(() => {
+    if (!stepOverridden && !vault.isLoading && vault.exists && !position.isLoading && position.status === 'active' && rule.enabled) {
+      router.replace('/app/overview');
+    }
+  }, [vault.exists, vault.isLoading, position.status, position.isLoading, rule.enabled, stepOverridden, router]);
 
   // Automatically derive step based on live on-chain state if user has not manually stepped
   useEffect(() => {
     if (stepOverridden) return;
+
+    // Wait until loading completes to prevent intermediate step flashes
+    if (vault.isLoading) return;
+    if (vault.exists && (position.isLoading || rule.isLoading || reserves.isLoading)) return;
 
     if (!vault.exists) {
       setActiveStep(1);
@@ -96,10 +115,14 @@ export default function OnboardingWizardPage() {
     }
   }, [
     vault.exists,
+    vault.isLoading,
     position.status,
+    position.isLoading,
     rule.triggerICR,
+    rule.isLoading,
     reserves.musdReserve,
     reserves.btcReserve,
+    reserves.isLoading,
     stepOverridden,
   ]);
 
@@ -382,6 +405,10 @@ export default function OnboardingWizardPage() {
         <Stepper
           steps={WIZARD_STEPS}
           currentStep={activeStep}
+          onStepClick={(step) => {
+            setStepOverridden(true);
+            setActiveStep(step);
+          }}
           className="cursor-pointer"
         />
       </div>
@@ -1010,7 +1037,9 @@ export default function OnboardingWizardPage() {
             )}
 
             <Link href="/app/overview">
-              <Button variant="secondary">Go to Live Overview Dashboard →</Button>
+              <Button variant={rule.enabled ? 'primary' : 'secondary'}>
+                Go to Live Overview Dashboard →
+              </Button>
             </Link>
 
             <Button
@@ -1026,5 +1055,23 @@ export default function OnboardingWizardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function OnboardingWizardPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="space-y-8 max-w-4xl mx-auto p-8">
+          <div className="border-b border-hairline pb-4">
+            <div className="h-4 w-32 bg-paper-surface animate-pulse mb-2" />
+            <div className="h-8 w-64 bg-paper-surface animate-pulse" />
+          </div>
+          <div className="h-96 w-full bg-paper-surface animate-pulse rounded-sm" />
+        </div>
+      }
+    >
+      <OnboardingWizardContent />
+    </React.Suspense>
   );
 }

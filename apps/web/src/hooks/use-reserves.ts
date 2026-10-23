@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useBlockNumber, useAccount } from 'wagmi';
 import { type Address, isAddress, zeroAddress } from 'viem';
@@ -51,9 +52,9 @@ export function useReserves({
       'reserves',
       vaultAddress?.toLowerCase(),
       userAddress?.toLowerCase(),
-      Number(blockNumber ?? 0n),
     ],
     enabled: Boolean(publicClient && vaultAddress && isAddress(vaultAddress) && vaultAddress !== zeroAddress),
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       if (!publicClient || !vaultAddress) return null;
 
@@ -96,40 +97,53 @@ export function useReserves({
       const userBtcBalance = userAddress ? (results[3] as bigint) : 0n;
       const musdAllowance = userAddress ? (results[4] as bigint) : 0n;
 
-      let defenseCapacity: { criticalPrice: bigint; absorbableDropPercent: number } | null = null;
-      if (
-        collateral !== undefined &&
-        collateral !== null &&
-        debt !== undefined &&
-        debt !== null &&
-        price !== undefined &&
-        price !== null &&
-        targetICR !== undefined &&
-        targetICR !== null &&
-        targetICR > 0n
-      ) {
-        defenseCapacity = computeAbsorptionCapacity(
-          collateral,
-          debt,
-          price,
-          targetICR,
-          musdReserve,
-          btcReserve,
-          PROTOCOL_CONSTANTS.MIN_NET_DEBT_DEFAULT,
-        );
-      }
-
       return {
         musdReserve,
         btcReserve,
         userMusdBalance,
         userBtcBalance,
         musdAllowance,
-        defenseCapacity,
       };
     },
     staleTime: 10_000,
   });
+
+  useEffect(() => {
+    if (blockNumber) {
+      query.refetch();
+    }
+  }, [blockNumber]);
+
+  const defenseCapacity = useMemo(() => {
+    const musdReserve = query.data?.musdReserve;
+    const btcReserve = query.data?.btcReserve;
+    if (
+      musdReserve !== undefined &&
+      musdReserve !== null &&
+      btcReserve !== undefined &&
+      btcReserve !== null &&
+      collateral !== undefined &&
+      collateral !== null &&
+      debt !== undefined &&
+      debt !== null &&
+      price !== undefined &&
+      price !== null &&
+      targetICR !== undefined &&
+      targetICR !== null &&
+      targetICR > 0n
+    ) {
+      return computeAbsorptionCapacity(
+        collateral,
+        debt,
+        price,
+        targetICR,
+        musdReserve,
+        btcReserve,
+        PROTOCOL_CONSTANTS.MIN_NET_DEBT_DEFAULT,
+      );
+    }
+    return null;
+  }, [query.data?.musdReserve, query.data?.btcReserve, collateral, debt, price, targetICR]);
 
   return {
     musdReserve: query.data?.musdReserve ?? null,
@@ -137,7 +151,7 @@ export function useReserves({
     userMusdBalance: query.data?.userMusdBalance ?? null,
     userBtcBalance: query.data?.userBtcBalance ?? null,
     musdAllowance: query.data?.musdAllowance ?? null,
-    defenseCapacity: query.data?.defenseCapacity ?? null,
+    defenseCapacity,
     isLoading: query.isLoading,
     isError: query.isError,
     error: query.error as Error | null,

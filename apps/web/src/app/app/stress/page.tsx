@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useAccount, useBlockNumber } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { formatEther } from 'viem';
 import {
   useVault,
@@ -33,7 +33,6 @@ import {
 
 export default function StressTestPage() {
   const { address: userAddress, isConnected } = useAccount();
-  const { data: blockNumber } = useBlockNumber({ watch: true });
 
   const { vaultAddress, exists: vaultExists, isLoading: vaultLoading } = useVault(userAddress);
   const position = usePosition(vaultAddress);
@@ -226,7 +225,7 @@ export default function StressTestPage() {
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-ink-muted">Active State:</span>
           <AddressChip address={vaultAddress} showCopy showExplorer size="sm" />
-          <StatusBadge status="active" label={`Block #${blockNumber?.toString() || '—'}`} />
+          <StatusBadge status="active" label="Simulation Ready" />
         </div>
       </div>
 
@@ -680,7 +679,7 @@ export default function StressTestPage() {
         <div>
           <span className="font-bold uppercase text-ink">Strict Transparency Disclaimer:</span>
           <p className="mt-0.5">
-            Every trajectory, defense step, and survival floor displayed above is a pure mathematical projection computed directly from active on-chain ledger state (Block #{blockNumber?.toString() || '—'}) and your pre-configured BallastVault rule parameters. These outputs represent algorithmic simulation under defined inputs, not a prediction or financial guarantee of future market behavior.
+            Every trajectory, defense step, and survival floor displayed above is a pure mathematical projection computed directly from active on-chain ledger state and your pre-configured BallastVault rule parameters. These outputs represent algorithmic simulation under defined inputs, not a prediction or financial guarantee of future market behavior.
           </p>
         </div>
       </div>

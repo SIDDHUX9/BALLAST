@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { usePublicClient, useBlockNumber } from 'wagmi';
 import { type Address, isAddress, zeroAddress } from 'viem';
@@ -22,8 +23,9 @@ export function useDefenseCheck(vaultAddress?: Address): UseDefenseCheckResult {
   const { data: blockNumber } = useBlockNumber({ watch: true });
 
   const query = useQuery({
-    queryKey: ['defense-check', vaultAddress?.toLowerCase(), Number(blockNumber ?? 0n)],
+    queryKey: ['defense-check', vaultAddress?.toLowerCase()],
     enabled: Boolean(publicClient && vaultAddress && isAddress(vaultAddress) && vaultAddress !== zeroAddress),
+    placeholderData: (previousData) => previousData,
     queryFn: async () => {
       if (!publicClient || !vaultAddress) return null;
 
@@ -49,6 +51,12 @@ export function useDefenseCheck(vaultAddress?: Address): UseDefenseCheckResult {
     },
     staleTime: 10_000,
   });
+
+  useEffect(() => {
+    if (blockNumber) {
+      query.refetch();
+    }
+  }, [blockNumber]);
 
   return {
     defendable: query.data?.defendable ?? null,
