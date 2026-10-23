@@ -2,10 +2,27 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { BRAND_NAME, BRAND_TAGLINE, BRAND_DESCRIPTION, BRAND_URLS } from '@ballast/shared';
+import {
+  BRAND_NAME,
+  BRAND_TAGLINE,
+  BRAND_DESCRIPTION,
+  BRAND_URLS,
+  MATSNET_PROTOCOL_ADDRESSES,
+} from '@ballast/shared';
+import { MATSNET_DEPLOYMENT } from '../../lib/deployment';
 import { ExternalLink, Terminal, ShieldCheck } from 'lucide-react';
+import { AddressChip } from '../ui/address-chip';
 
 export function Footer() {
+  const contracts = [
+    { name: 'BallastFactory', address: MATSNET_DEPLOYMENT.ballastFactory },
+    { name: 'BallastVault Impl', address: MATSNET_DEPLOYMENT.ballastVaultImplementation },
+    { name: 'BorrowerOperations', address: MATSNET_PROTOCOL_ADDRESSES.borrowerOperations },
+    { name: 'TroveManager', address: MATSNET_PROTOCOL_ADDRESSES.troveManager },
+    { name: 'PriceFeed', address: MATSNET_PROTOCOL_ADDRESSES.priceFeed },
+    { name: 'MUSD Token', address: MATSNET_PROTOCOL_ADDRESSES.musd },
+  ];
+
   return (
     <footer className="border-t border-hairline bg-paper-raised transition-colors mt-20">
       <div className="max-w-container mx-auto px-4 md:px-6 py-12">
@@ -89,6 +106,28 @@ export function Footer() {
             >
               <span>Borrower App Shell</span>
             </Link>
+          </div>
+        </div>
+
+        {/* Deployed On-Chain Contracts Strip */}
+        <div className="border-t border-hairline pt-6 pb-6">
+          <div className="flex flex-col gap-3">
+            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-ink-muted">
+              Verified Deployed Contracts (Mezo Matsnet Testnet 31611)
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {contracts.map((c) => (
+                <div
+                  key={c.name}
+                  className="flex flex-col gap-1 p-2 rounded-sm border border-hairline bg-paper-surface"
+                >
+                  <span className="text-[10px] font-mono text-ink-muted uppercase truncate">
+                    {c.name}
+                  </span>
+                  <AddressChip address={c.address} showCopy showExplorer size="sm" />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

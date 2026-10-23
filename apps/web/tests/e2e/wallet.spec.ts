@@ -9,7 +9,7 @@ test.describe('Wallet Integration & Connect Modal E2E', () => {
     await expect(networkChip).toBeVisible();
 
     // Verify Connect Wallet button is present in header
-    const connectBtn = page.getByRole('button', { name: /Connect Wallet/i });
+    const connectBtn = page.getByRole('button', { name: /Connect Wallet/i }).first();
     await expect(connectBtn).toBeVisible();
   });
 

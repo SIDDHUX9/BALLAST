@@ -8,6 +8,7 @@ import { useTheme } from '../theme-provider';
 import { Sun, Moon, Anchor } from 'lucide-react';
 import { Button } from '../ui/button';
 import { WalletButton } from '../wallet/wallet-button';
+import { NotificationCenter } from '../notifications/notification-center';
 
 export interface HeaderProps {
   walletSlot?: React.ReactNode;
@@ -108,6 +109,9 @@ export function Header({ walletSlot }: HeaderProps) {
               <Sun className="w-4 h-4 stroke-[1.5]" />
             )}
           </button>
+
+          {/* Notifications Center */}
+          <NotificationCenter />
 
           {/* App Entry or Wallet Slot */}
           {walletSlot ? (

@@ -3,10 +3,12 @@
 import React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 
-export interface SliderProps {
+export type SliderValue = number | number[];
+
+export interface SliderProps<T extends SliderValue = SliderValue> {
   label?: string;
-  value: number[];
-  onValueChange: (val: number[]) => void;
+  value: T;
+  onValueChange: (val: T) => void;
   min?: number;
   max?: number;
   step?: number;
@@ -15,7 +17,7 @@ export interface SliderProps {
   className?: string;
 }
 
-export function Slider({
+export function Slider<T extends SliderValue = number[]>({
   label,
   value,
   onValueChange,
@@ -25,23 +27,35 @@ export function Slider({
   unit = '%',
   disabled = false,
   className = '',
-}: SliderProps) {
+}: SliderProps<T>) {
+  const arrayValue: number[] = Array.isArray(value) ? (value as number[]) : [value as number];
+
+  const handleChange = (vals: number[]) => {
+    if (Array.isArray(value)) {
+      (onValueChange as (v: number[]) => void)(vals as T & number[]);
+    } else {
+      (onValueChange as (v: number) => void)(vals[0]);
+    }
+  };
+
   return (
     <div className={`flex flex-col gap-2 w-full ${className}`}>
-      <div className="flex justify-between items-center text-xs font-mono">
-        {label && <span className="uppercase tracking-wider text-ink-muted">{label}</span>}
-        <span className="font-semibold text-ink tabular-nums">
-          {value[0]}
-          {unit}
-        </span>
-      </div>
+      {label && (
+        <div className="flex justify-between items-center text-xs font-mono">
+          <span className="uppercase tracking-wider text-ink-muted">{label}</span>
+          <span className="font-semibold text-ink tabular-nums">
+            {arrayValue[0]}
+            {unit}
+          </span>
+        </div>
+      )}
 
       <SliderPrimitive.Root
         min={min}
         max={max}
         step={step}
-        value={value}
-        onValueChange={onValueChange}
+        value={arrayValue}
+        onValueChange={handleChange}
         disabled={disabled}
         className="relative flex items-center select-none touch-none w-full h-5 cursor-pointer"
       >

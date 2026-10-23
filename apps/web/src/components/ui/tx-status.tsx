@@ -2,12 +2,15 @@
 
 import React from 'react';
 import { ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import type { WriteStatus } from '../../hooks/use-ballast-write';
 
-export type TxStatusState = 'pending' | 'confirmed' | 'failed';
+export type TxStatusState = 'pending' | 'confirmed' | 'failed' | WriteStatus;
 
 export interface TxStatusProps {
   status: TxStatusState;
-  hash: string;
+  hash?: string;
+  txHash?: string;
+  error?: string;
   label?: string;
   explorerUrl?: string;
   className?: string;
@@ -16,57 +19,63 @@ export interface TxStatusProps {
 export function TxStatus({
   status,
   hash,
+  txHash,
+  error,
   label,
   explorerUrl = 'https://explorer.test.mezo.org',
   className = '',
 }: TxStatusProps) {
-  const truncatedHash = `${hash.slice(0, 6)}…${hash.slice(-4)}`;
-  const link = `${explorerUrl.replace(/\/$/, '')}/tx/${hash}`;
+  if (status === 'idle') return null;
 
-  const config = {
-    pending: {
-      text: 'text-watch',
-      border: 'border-watch/40',
-      bg: 'bg-watch/10',
-      icon: <Loader2 className="w-3.5 h-3.5 text-watch animate-spin stroke-[1.5]" />,
-      defaultLabel: 'TRANSACTION PENDING',
-    },
-    confirmed: {
-      text: 'text-safe',
-      border: 'border-safe/40',
-      bg: 'bg-safe/10',
-      icon: <CheckCircle2 className="w-3.5 h-3.5 text-safe stroke-[1.5]" />,
-      defaultLabel: 'CONFIRMED ON MEZO',
-    },
-    failed: {
-      text: 'text-danger',
-      border: 'border-danger/40',
-      bg: 'bg-danger/10',
-      icon: <XCircle className="w-3.5 h-3.5 text-danger stroke-[1.5]" />,
-      defaultLabel: 'TRANSACTION REVERTED',
-    },
-  };
+  const actualHash = hash || txHash;
+  const truncatedHash = actualHash ? `${actualHash.slice(0, 6)}…${actualHash.slice(-4)}` : null;
+  const link = actualHash ? `${explorerUrl.replace(/\/$/, '')}/tx/${actualHash}` : null;
 
-  const current = config[status];
+  const isPending =
+    status === 'pending' ||
+    status === 'simulating' ||
+    status === 'awaiting_signature' ||
+    status === 'submitted';
+
+  const isSuccess = status === 'confirmed';
+  const isFailed = status === 'failed';
+
+  let statusLabel = label;
+  if (!statusLabel) {
+    if (status === 'simulating') statusLabel = 'SIMULATING TRANSACTION...';
+    else if (status === 'awaiting_signature') statusLabel = 'AWAITING WALLET SIGNATURE...';
+    else if (status === 'submitted' || status === 'pending') statusLabel = 'TRANSACTION SUBMITTED...';
+    else if (isSuccess) statusLabel = 'CONFIRMED ON MEZO';
+    else if (isFailed) statusLabel = error || 'TRANSACTION FAILED';
+  }
+
+  const borderClass = isSuccess
+    ? 'border-safe/40 bg-safe/10 text-safe'
+    : isFailed
+    ? 'border-danger/40 bg-danger/10 text-danger'
+    : 'border-watch/40 bg-watch/10 text-watch';
 
   return (
     <div
-      className={`inline-flex items-center gap-2 px-2.5 py-1 text-xs font-mono border rounded-sm ${current.border} ${current.bg} ${className}`}
+      className={`inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono border rounded-sm ${borderClass} ${className}`}
     >
-      {current.icon}
-      <span className={`font-semibold tracking-wider ${current.text}`}>
-        {label || current.defaultLabel}
-      </span>
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-ink-muted hover:text-ink flex items-center gap-1 ml-1 underline underline-offset-2 tabular-nums"
-        title={hash}
-      >
-        <span>{truncatedHash}</span>
-        <ExternalLink className="w-3 h-3 stroke-[1.5]" />
-      </a>
+      {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 stroke-[1.5]" />}
+      {isSuccess && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 stroke-[1.5]" />}
+      {isFailed && <XCircle className="w-3.5 h-3.5 shrink-0 stroke-[1.5]" />}
+
+      <span className="font-semibold tracking-wider">{statusLabel}</span>
+
+      {link && truncatedHash && (
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-ember flex items-center gap-1 ml-1"
+        >
+          <span>({truncatedHash})</span>
+          <ExternalLink className="w-3 h-3 stroke-[1.5]" />
+        </a>
+      )}
     </div>
   );
 }

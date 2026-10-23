@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useAccount, usePublicClient, useSwitchChain } from 'wagmi';
-import { formatEther, parseEther, type Address, zeroAddress } from 'viem';
+import { formatEther, parseEther } from 'viem';
 import {
   BallastFactoryAbi,
   BallastVaultAbi,
@@ -12,7 +12,6 @@ import {
   computeICR,
   computeLiquidationPrice,
   computeAbsorptionCapacity,
-  PROTOCOL_CONSTANTS,
   PRECISION,
 } from '@ballast/shared';
 import {
@@ -39,9 +38,6 @@ import { WalletButton } from '../../components/wallet/wallet-button';
 import {
   Shield,
   ShieldCheck,
-  AlertTriangle,
-  ArrowRight,
-  RefreshCw,
   ExternalLink,
   Wallet,
   Lock,
@@ -115,7 +111,7 @@ export default function OnboardingWizardPage() {
   // Form State: Step 3 (Protection Rule)
   const [triggerPercent, setTriggerPercent] = useState<number>(125);
   const [targetPercent, setTargetPercent] = useState<number>(140);
-  const [tipBps, setTipBps] = useState<number>(50); // 0.50%
+  const tipBps = 50; // 0.50%
 
   // Form State: Step 4 (Reserves)
   const [musdDepositInput, setMusdDepositInput] = useState<string>('500');

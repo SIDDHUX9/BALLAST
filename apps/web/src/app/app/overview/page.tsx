@@ -6,8 +6,6 @@ import { useAccount, usePublicClient, useSwitchChain } from 'wagmi';
 import { formatEther, parseEther } from 'viem';
 import {
   BallastVaultAbi,
-  computeAbsorptionCapacity,
-  PROTOCOL_CONSTANTS,
 } from '@ballast/shared';
 import {
   useVault,
@@ -34,10 +32,6 @@ import {
   ShieldCheck,
   ExternalLink,
   Shield,
-  LifeBuoy,
-  PlusCircle,
-  ArrowDownCircle,
-  ArrowRight,
   RefreshCw,
   Wallet,
   AlertTriangle,

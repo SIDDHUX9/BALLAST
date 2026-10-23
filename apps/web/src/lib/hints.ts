@@ -1,28 +1,21 @@
-import { type Address, type PublicClient, zeroAddress } from 'viem';
-import { MATSNET_PROTOCOL_ADDRESSES, SortedTrovesAbi, HintHelpersAbi } from '@ballast/shared';
-
-export interface HintPair {
-  upperHint: Address;
-  lowerHint: Address;
-}
+import { type Address, zeroAddress, type PublicClient } from 'viem';
+import { MATSNET_PROTOCOL_ADDRESSES, SortedTrovesAbi } from '@ballast/shared';
 
 /**
- * Computes upper and lower insert hints for SortedTroves using HintHelpers and SortedTroves.
+ * Computes off-chain SortedTroves insertion hints for borrower operations.
+ * NICR = (collateral * 1e20) / debt
  */
-export async function computeInsertHints(
+export async function getInsertionHints(
   publicClient: PublicClient,
   collateral: bigint,
-  debt: bigint,
-): Promise<HintPair> {
+  debt: bigint
+): Promise<{ upperHint: Address; lowerHint: Address }> {
   if (debt === 0n || collateral === 0n) {
     return { upperHint: zeroAddress, lowerHint: zeroAddress };
   }
 
-  // NICR = (collateral * 1e20) / debt
-  const nicr = (collateral * 10n ** 20n) / debt;
-
   try {
-    // 1. Check head and tail of SortedTroves for fast O(1) boundary insert
+    const nicr = (collateral * 10n ** 20n) / debt;
     const [first, last] = await Promise.all([
       publicClient.readContract({
         address: MATSNET_PROTOCOL_ADDRESSES.sortedTroves,
@@ -36,13 +29,7 @@ export async function computeInsertHints(
       }) as Promise<Address>,
     ]);
 
-    if (first === zeroAddress) {
-      // Empty list
-      return { upperHint: zeroAddress, lowerHint: zeroAddress };
-    }
-
-    // Try finding insert position directly
-    const [prevId, nextId] = (await publicClient.readContract({
+    const hints = (await publicClient.readContract({
       address: MATSNET_PROTOCOL_ADDRESSES.sortedTroves,
       abi: SortedTrovesAbi,
       functionName: 'findInsertPosition',
@@ -50,11 +37,13 @@ export async function computeInsertHints(
     })) as [Address, Address];
 
     return {
-      upperHint: prevId,
-      lowerHint: nextId,
+      upperHint: hints[0] || zeroAddress,
+      lowerHint: hints[1] || zeroAddress,
     };
   } catch {
-    // Return zero hints as fallback; protocol will search from head if hints are 0
     return { upperHint: zeroAddress, lowerHint: zeroAddress };
   }
 }
+
+export const computeInsertHints = getInsertionHints;
+

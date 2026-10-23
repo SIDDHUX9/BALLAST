@@ -647,3 +647,18 @@ export const tick = internalAction({
     }
   },
 });
+
+/**
+ * Public Query: Reads keeper defenses for a specific vault from Convex audit trail.
+ */
+export const getDefensesByVault = query({
+  args: { vault: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("defenses")
+      .withIndex("by_vault", (q) => q.eq("vault", args.vault.toLowerCase()))
+      .order("desc")
+      .take(50);
+  },
+});
+

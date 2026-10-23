@@ -578,3 +578,84 @@ export const processWebhookUpdate = internalAction({
     await bot.handleUpdate(args.update);
   },
 });
+
+/**
+ * Public Query: Reads telegram binding and preferences for a wallet address.
+ */
+export const getUserBinding = query({
+  args: { address: v.string() },
+  handler: async (ctx, args) => {
+    const addr = args.address.toLowerCase();
+    const user = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_address", (q) => q.eq("address", addr))
+      .first();
+
+    if (!user) {
+      return {
+        linked: false,
+        chatId: null,
+        watchPercent: null,
+        mutedUntil: 0,
+        isMuted: false,
+        createdAt: null,
+      };
+    }
+
+    const isMuted = user.mutedUntil > Date.now();
+    return {
+      linked: true,
+      chatId: user.chatId,
+      watchPercent: user.watchPercent ?? null,
+      mutedUntil: user.mutedUntil,
+      isMuted,
+      createdAt: user.createdAt,
+    };
+  },
+});
+
+/**
+ * Public Mutation: Updates custom watch-level threshold for linked user.
+ */
+export const updateWatchPercent = mutation({
+  args: { address: v.string(), watchPercent: v.number() },
+  handler: async (ctx, args) => {
+    const addr = args.address.toLowerCase();
+    const user = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_address", (q) => q.eq("address", addr))
+      .first();
+
+    if (!user) {
+      throw new Error("No linked Telegram account found for this address");
+    }
+
+    await ctx.db.patch(user._id, {
+      watchPercent: args.watchPercent,
+    });
+    return true;
+  },
+});
+
+/**
+ * Public Mutation: Mutes or unmutes telegram alerts for linked user.
+ */
+export const setMute = mutation({
+  args: { address: v.string(), hours: v.number() },
+  handler: async (ctx, args) => {
+    const addr = args.address.toLowerCase();
+    const user = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_address", (q) => q.eq("address", addr))
+      .first();
+
+    if (!user) {
+      throw new Error("No linked Telegram account found for this address");
+    }
+
+    const mutedUntil = args.hours > 0 ? Date.now() + args.hours * 3600 * 1000 : 0;
+    await ctx.db.patch(user._id, { mutedUntil });
+    return { mutedUntil, isMuted: mutedUntil > Date.now() };
+  },
+});
+

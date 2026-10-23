@@ -3,6 +3,8 @@ import { Fraunces, Instrument_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { BRAND_NAME, BRAND_TAGLINE, BRAND_DESCRIPTION } from '@ballast/shared';
 import { ThemeProvider } from '../components/theme-provider';
+import { NotificationsProvider } from '../components/notifications/notifications-provider';
+import { BallastConvexProvider } from '../components/convex-provider';
 import { WalletProvider } from '../components/wallet/wallet-provider';
 import { NetworkBanner } from '../components/wallet/network-banner';
 
@@ -58,10 +60,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased min-h-screen bg-paper text-ink font-sans selection:bg-ember selection:text-paper-raised">
         <ThemeProvider>
-          <WalletProvider>
-            <NetworkBanner />
-            {children}
-          </WalletProvider>
+          <NotificationsProvider>
+            <BallastConvexProvider>
+              <WalletProvider>
+                <NetworkBanner />
+                {children}
+              </WalletProvider>
+            </BallastConvexProvider>
+          </NotificationsProvider>
         </ThemeProvider>
       </body>
     </html>

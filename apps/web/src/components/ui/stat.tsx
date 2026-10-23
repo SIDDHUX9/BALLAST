@@ -8,6 +8,7 @@ export interface StatProps {
   label: string;
   value?: string | number | null;
   unit?: string;
+  hint?: string;
   delta?: {
     value: string;
     type: 'positive' | 'negative' | 'neutral';
@@ -21,6 +22,7 @@ export function Stat({
   label,
   value,
   unit,
+  hint,
   delta,
   tooltip,
   loading = false,
@@ -59,6 +61,12 @@ export function Stat({
           <span className="text-xl font-mono text-ink-muted italic select-none">—</span>
         )}
       </div>
+
+      {hint && !loading && (
+        <div className="mt-1.5 text-[11px] font-mono text-ink-muted truncate" title={hint}>
+          {hint}
+        </div>
+      )}
 
       {delta && !loading && (
         <div className="mt-2 text-xs font-mono flex items-center gap-1">

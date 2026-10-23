@@ -5,6 +5,7 @@ import * as SwitchPrimitive from '@radix-ui/react-switch';
 
 export interface SwitchProps {
   label?: string;
+  ariaLabel?: string;
   description?: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
@@ -14,6 +15,7 @@ export interface SwitchProps {
 
 export function Switch({
   label,
+  ariaLabel,
   description,
   checked,
   onCheckedChange,
@@ -37,9 +39,10 @@ export function Switch({
         checked={checked}
         onCheckedChange={onCheckedChange}
         disabled={disabled}
+        aria-label={ariaLabel || label || 'Toggle Switch'}
         className="w-10 h-6 bg-hairline rounded-sm transition-colors duration-180 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ember data-[state=checked]:bg-safe disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer p-0.5"
       >
-        <SwitchPrimitive.Thumb className="block w-5 h-5 bg-paper-surface rounded-sm transition-transform duration-180 translate-x-0 data-[state=checked]:translate-x-4 border border-hairline-strong shadow-sm" />
+        <SwitchPrimitive.Thumb className="block w-5 h-5 bg-paper-surface rounded-sm shadow-sm transition-transform duration-180 will-change-transform data-[state=checked]:translate-x-4 border border-hairline" />
       </SwitchPrimitive.Root>
     </div>
   );

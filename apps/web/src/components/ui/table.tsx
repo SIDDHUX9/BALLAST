@@ -5,6 +5,7 @@ import React from 'react';
 export interface Column<T> {
   header: string;
   accessorKey?: keyof T;
+  key?: keyof T;
   render?: (item: T) => React.ReactNode;
   align?: 'left' | 'center' | 'right';
   className?: string;
@@ -61,10 +62,11 @@ export function Table<T extends Record<string, unknown>>({
             data.map((row, rowIdx) => (
               <tr key={rowIdx} className="hover:bg-hairline/10 transition-colors">
                 {columns.map((col, colIdx) => {
+                  const keyField = col.accessorKey || col.key;
                   const content = col.render
                     ? col.render(row)
-                    : col.accessorKey
-                      ? (row[col.accessorKey] as React.ReactNode)
+                    : keyField
+                      ? (row[keyField] as React.ReactNode)
                       : null;
                   return (
                     <td

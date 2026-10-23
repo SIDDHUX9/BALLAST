@@ -34,3 +34,23 @@ export function Popover({
     </PopoverPrimitive.Root>
   );
 }
+
+export const PopoverRoot = PopoverPrimitive.Root;
+export const PopoverTrigger = PopoverPrimitive.Trigger;
+export const PopoverContent = React.forwardRef<
+  React.ElementRef<typeof PopoverPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
+>(({ className = '', align = 'center', sideOffset = 6, children, ...props }, ref) => (
+  <PopoverPrimitive.Portal>
+    <PopoverPrimitive.Content
+      ref={ref}
+      align={align}
+      sideOffset={sideOffset}
+      className={`z-50 rounded-sm border border-hairline bg-paper-raised p-4 text-xs font-mono text-ink shadow-elevation animate-in fade-in-50 ${className}`}
+      {...props}
+    >
+      {children}
+    </PopoverPrimitive.Content>
+  </PopoverPrimitive.Portal>
+));
+PopoverContent.displayName = PopoverPrimitive.Content.displayName;

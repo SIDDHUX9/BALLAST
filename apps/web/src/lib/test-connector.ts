@@ -20,7 +20,8 @@ export function getE2EBurnerWallet() {
         type: 'e2e_test_connector',
         marker: 'E2E_BURNER_CONNECTOR_DO_NOT_SHIP_TO_PRODUCTION',
         connect: async () => {
-          const accounts = ['0x90F79bf6EB2c4f870365E785982E1f101E93b906' as const];
+          const testAccount = (process.env.NEXT_PUBLIC_TEST_ACCOUNT || '0xb6ba1be32b7ca2729551882b71e8f469d06510e6') as `0x${string}`;
+          const accounts = [testAccount];
           emitter.emit('change', { accounts, chainId: 31611 });
           return {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Wagmi connect return type mapping
@@ -32,17 +33,19 @@ export function getE2EBurnerWallet() {
           emitter.emit('disconnect');
         },
         async getAccounts() {
-          return ['0x90F79bf6EB2c4f870365E785982E1f101E93b906' as const];
+          const testAccount = (process.env.NEXT_PUBLIC_TEST_ACCOUNT || '0xb6ba1be32b7ca2729551882b71e8f469d06510e6') as `0x${string}`;
+          return [testAccount];
         },
         async getChainId() {
           return 31611;
         },
         async getProvider() {
-          const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545';
+          const rpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.test.mezo.org';
+          const testAccount = (process.env.NEXT_PUBLIC_TEST_ACCOUNT || '0xb6ba1be32b7ca2729551882b71e8f469d06510e6') as `0x${string}`;
           return {
             async request({ method, params }: { method: string; params?: any[] }) {
               if (method === 'eth_accounts' || method === 'eth_requestAccounts') {
-                return ['0x90F79bf6EB2c4f870365E785982E1f101E93b906'];
+                return [testAccount];
               }
               if (method === 'eth_chainId') {
                 return '0x7b7b';
