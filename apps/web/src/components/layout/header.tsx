@@ -37,35 +37,45 @@ export function Header({ walletSlot }: HeaderProps) {
   ];
 
   return (
-    <header className="border-b border-hairline bg-paper/95 sticky top-0 z-40 transition-colors">
-      <div className="max-w-container mx-auto px-4 md:px-6 h-16 flex items-center justify-between gap-4">
+    <header
+      className={`sticky top-0 z-40 transition-colors ${
+        isApp
+          ? 'border-b border-hairline bg-paper/95'
+          : 'bg-[#F5F1E8]/90 backdrop-blur-md text-[#14130F]'
+      }`}
+    >
+      <div className="max-w-container mx-auto px-4 md:px-8 h-18 flex items-center justify-between gap-4">
         {/* Brand Wordmark */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group focus-visible:outline-none">
-            <span className="w-8 h-8 rounded-sm bg-ink text-paper-raised flex items-center justify-center border border-ink group-hover:bg-ember transition-colors">
+            <span className="w-8 h-8 rounded-sm bg-[#14130F] text-white flex items-center justify-center border border-[#14130F] group-hover:bg-[#C84E29] transition-colors">
               <Anchor className="w-4 h-4 stroke-[1.5]" />
             </span>
             <div className="flex flex-col">
-              <span className="font-serif font-bold text-lg text-ink tracking-tight leading-none group-hover:text-ember transition-colors">
+              <span className="font-serif font-bold text-lg text-[#14130F] dark:text-inherit tracking-tight leading-none group-hover:text-[#C84E29] transition-colors">
                 {BRAND_NAME}
               </span>
-              <span className="text-[10px] font-mono text-ink-muted uppercase tracking-wider hidden sm:inline">
-                {BRAND_TAGLINE}
-              </span>
+              {isApp && (
+                <span className="text-[10px] font-mono text-ink-muted uppercase tracking-wider hidden sm:inline">
+                  {BRAND_TAGLINE}
+                </span>
+              )}
             </div>
           </Link>
 
-          {/* Network Chip */}
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-hairline bg-paper-surface text-[11px] font-mono text-ink-muted">
-            <span className="w-1.5 h-1.5 rounded-full bg-safe shrink-0 animate-pulse" />
-            <span>Mezo Matsnet</span>
-            <span className="text-hairline-strong">|</span>
-            <span className="tabular-nums">31611</span>
-          </div>
+          {/* Network Chip - Only in App */}
+          {isApp && (
+            <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-hairline bg-paper-surface text-[11px] font-mono text-ink-muted">
+              <span className="w-1.5 h-1.5 rounded-full bg-safe shrink-0 animate-pulse" />
+              <span>Mezo Matsnet</span>
+              <span className="text-hairline-strong">|</span>
+              <span className="tabular-nums">31611</span>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-5 text-xs font-mono tracking-wider uppercase">
+        <nav className="hidden md:flex items-center gap-6 text-sm font-sans">
           {isApp
             ? appNavItems.map((item) => {
                 const active = pathname === item.href || (item.href === '/app/overview' && pathname === '/app');
@@ -73,7 +83,7 @@ export function Header({ walletSlot }: HeaderProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`transition-colors pb-1 border-b-2 ${
+                    className={`transition-colors pb-1 border-b-2 text-xs font-mono uppercase tracking-wider ${
                       active
                         ? 'border-ember text-ink font-semibold'
                         : 'border-transparent text-ink-muted hover:text-ink'
@@ -87,7 +97,7 @@ export function Header({ walletSlot }: HeaderProps) {
                 <a
                   key={item.href}
                   href={item.href}
-                  className="text-ink-muted hover:text-ink transition-colors pb-1 border-b-2 border-transparent"
+                  className="text-[#68635B] hover:text-[#14130F] transition-colors font-medium"
                 >
                   {item.label}
                 </a>

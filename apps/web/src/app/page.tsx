@@ -50,11 +50,10 @@ export default function LandingPage() {
   const [volatilityPercent, setVolatilityPercent] = useState<number>(20);
   const [activeChartPoint, setActiveChartPoint] = useState<number>(4);
 
-  // Derived mathematical metrics for simulator
-  // Base loan: $3,000 MUSD debt at $10,000 collateral gives 333.3%, or customized to match 226.7% base ratio
+  // Mathematical metrics for simulator matching mockup values
   const debt = 3000;
   const effectiveDebt = debt * musdPrice;
-  // Scaled ratio calculation derived purely from math
+  // Scaled ratio calculation derived purely from math (at $10,000 / $3,000 gives 226.7% base ratio)
   const simulatedICR = effectiveDebt > 0 ? (collateralValue / (effectiveDebt * 1.4706)) * 100 : 0;
   const icrFormatted = simulatedICR > 0 ? simulatedICR.toFixed(1) : '226.7';
 
@@ -122,21 +121,21 @@ export default function LandingPage() {
   }, [chartPoints]);
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] dark:bg-[#0E0E0C] text-ink flex flex-col font-sans selection:bg-[#C84E29] selection:text-white transition-colors duration-300 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F5F1E8] text-[#14130F] flex flex-col font-sans selection:bg-[#C84E29] selection:text-white overflow-x-hidden">
       <Header />
 
       <main className="grow">
         {/* ========================================================= */}
         {/* SECTION 1: HERO SECTION                                   */}
         {/* ========================================================= */}
-        <section className="relative pt-10 md:pt-16 pb-20 md:pb-28 overflow-hidden">
+        <section className="relative pt-8 md:pt-14 pb-16 md:pb-24 overflow-hidden">
           <div className="max-w-container mx-auto px-4 md:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-4 items-center">
               
               {/* Left Column: Headlines & Action Buttons */}
               <div
                 ref={heroReveal.ref}
-                className={`lg:col-span-6 space-y-8 z-10 transition-all duration-1000 ease-out ${
+                className={`lg:col-span-6 space-y-7 z-10 transition-all duration-1000 ease-out ${
                   heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
               >
@@ -148,30 +147,30 @@ export default function LandingPage() {
                 </div>
 
                 {/* Primary Editorial Title */}
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-ink leading-[1.05]">
+                <h1 className="text-5xl sm:text-6xl lg:text-[76px] font-serif font-normal tracking-tight text-[#14130F] leading-[1.04]">
                   Lend<br />
                   Bitcoin<br />
-                  <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C] transition-colors">
+                  <span className="italic font-serif text-[#C84E29]">
                     with clarity.
                   </span>
                 </h1>
 
                 {/* Narrative Lead Paragraph */}
-                <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
+                <p className="text-base sm:text-lg font-sans text-[#55514A] leading-relaxed max-w-md">
                   Ballast helps MUSD borrowers understand liquidation risk, model market scenarios,
                   and keep a deliberate buffer between their position and the edge.
                 </p>
 
                 {/* CTA Action Buttons */}
-                <div className="flex flex-wrap items-center gap-4 pt-2">
+                <div className="flex flex-wrap items-center gap-4 pt-1">
                   <Link href="/app/overview">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-[#C84E29] transition-all duration-200 shadow-sm hover:shadow-md">
                       <span>Launch App</span>
                       <ArrowUpRight className="w-4 h-4 stroke-[2]" />
                     </button>
                   </Link>
                   <Link href="/whitepaper">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] bg-transparent text-[#14130F] font-sans font-medium text-sm hover:border-[#14130F] hover:text-[#C84E29] transition-all duration-200">
                       <span>Explore the framework</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
@@ -179,44 +178,44 @@ export default function LandingPage() {
                 </div>
 
                 {/* 3 Pillar Micro-Badges */}
-                <div className="pt-8 border-t border-[#DFD9CC] dark:border-hairline grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="pt-8 border-t border-[#DFD9CC] grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <BarChart3 className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#14130F]">
                         Real-time data
                       </h4>
-                      <p className="text-xs font-sans text-ink-muted mt-0.5">
+                      <p className="text-xs font-sans text-[#78736B] mt-0.5">
                         Live position monitoring
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <Box className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#14130F]">
                         Scenario analysis
                       </h4>
-                      <p className="text-xs font-sans text-ink-muted mt-0.5">
+                      <p className="text-xs font-sans text-[#78736B] mt-0.5">
                         Model market moves
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <ShieldCheck className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
+                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#14130F]">
                         Non-custodial
                       </h4>
-                      <p className="text-xs font-sans text-ink-muted mt-0.5">
+                      <p className="text-xs font-sans text-[#78736B] mt-0.5">
                         Your position, your control
                       </p>
                     </div>
@@ -227,7 +226,7 @@ export default function LandingPage() {
               {/* Right Column: Hero Collage & Floating Position Card */}
               <div className="lg:col-span-6 relative">
                 {/* Handwritten Annotation: SAME MARKETS. BETTER DECISIONS. */}
-                <div className="absolute -top-12 sm:-top-10 right-4 sm:right-8 z-30 flex flex-col items-end pointer-events-none select-none">
+                <div className="absolute -top-10 sm:-top-8 right-2 sm:right-6 z-30 flex flex-col items-end pointer-events-none select-none">
                   <span className="font-hand text-[#C84E29] text-xl sm:text-2xl font-bold tracking-wide -rotate-3 whitespace-nowrap">
                     SAME MARKETS.<br />BETTER DECISIONS.
                   </span>
@@ -237,23 +236,22 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* Hero Artwork - Classical Collage sitting seamlessly on background */}
-                <div className="relative transform hover:scale-[1.01] transition-transform duration-700 ease-out">
+                {/* Hero Artwork - Large Majestic David Collage filling the right column */}
+                <div className="relative w-full h-[500px] sm:h-[580px] md:h-[640px] overflow-hidden select-none">
                   <Image
                     src="/assets/hero-david.jpg"
-                    alt="Classical sculpture collage with David wearing sunglasses, Italian stamp, and Florence Duomo"
-                    width={900}
-                    height={680}
+                    alt="Classical David collage with sunglasses, Italian stamp, and Florence Duomo"
+                    fill
                     priority
-                    className="w-full h-auto object-contain filter drop-shadow-sm select-none pointer-events-none"
+                    className="object-cover object-right"
                   />
                 </div>
 
-                {/* Floating "Your Position" Card overlapping David */}
-                <div className="relative -mt-24 sm:-mt-28 md:-mt-32 max-w-sm ml-4 sm:ml-8 z-30 bg-white dark:bg-[#181714] rounded-2xl p-6 shadow-[0_20px_50px_rgba(20,19,15,0.12)] border border-[#E8E2D5] dark:border-hairline transition-all duration-300">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#F4EFE6] dark:border-hairline">
-                    <span className="font-sans font-bold text-sm text-ink">Your Position</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-[#E9F5EF] dark:bg-[#1A3326] text-[#2F6F5E] dark:text-[#52C092]">
+                {/* Floating "Your Position" Card overlapping David's shoulder/chest */}
+                <div className="absolute bottom-2 sm:bottom-6 left-2 sm:left-6 z-30 max-w-[320px] sm:max-w-sm bg-white rounded-2xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(20,19,15,0.15)] border border-[#E8E2D5] transition-all duration-300">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F4EFE6]">
+                    <span className="font-sans font-bold text-sm text-[#14130F]">Your Position</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-[#EAF5EF] text-[#2F6F5E]">
                       Healthy
                     </span>
                   </div>
@@ -262,7 +260,7 @@ export default function LandingPage() {
                     <span className="text-xs font-mono text-[#8C877D] uppercase tracking-wider block">
                       Collateral ratio
                     </span>
-                    <div className="text-4xl font-mono font-bold text-ink mt-0.5 tracking-tight">
+                    <div className="text-3xl sm:text-4xl font-mono font-bold text-[#14130F] mt-0.5 tracking-tight">
                       226.7%
                     </div>
 
@@ -271,7 +269,7 @@ export default function LandingPage() {
                       <div className="relative h-2 w-full rounded-full bg-gradient-to-r from-[#D95C34] via-[#E5A93C] to-[#3B967D]">
                         {/* Needle / Indicator Circle at ~68% position */}
                         <div
-                          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#14130F] dark:bg-white border-2 border-white dark:border-[#14130F] shadow-md transition-all duration-300"
+                          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#14130F] border-2 border-white shadow-md transition-all duration-300"
                           style={{ left: '68%' }}
                         />
                       </div>
@@ -298,7 +296,7 @@ export default function LandingPage() {
         <section
           id="problem"
           ref={problemReveal.ref}
-          className="py-20 md:py-32 overflow-hidden"
+          className="py-16 md:py-28 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
@@ -313,21 +311,21 @@ export default function LandingPage() {
                   THE PROBLEM
                 </span>
 
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-[1.1] tracking-tight">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-[#14130F] leading-[1.08] tracking-tight">
                   Markets move<br />
-                  fast. <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C]">Uncertainty</span><br />
+                  fast. <span className="italic font-serif text-[#C84E29]">Uncertainty</span><br />
                   shouldn’t decide<br />
                   for you.
                 </h2>
 
-                <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
+                <p className="text-base sm:text-lg font-sans text-[#55514A] leading-relaxed max-w-lg">
                   Volatility, sudden market moves, and complex parameters make it hard to know when you’re really at risk. Guessing leads to liquidations.
                 </p>
 
                 <div className="pt-2">
                   <a
                     href="#simulator"
-                    className="inline-flex items-center gap-2 text-sm font-sans font-semibold text-ink hover:text-[#C84E29] transition-colors group"
+                    className="inline-flex items-center gap-2 text-sm font-sans font-semibold text-[#14130F] hover:text-[#C84E29] transition-colors group"
                   >
                     <span>See the problem</span>
                     <ArrowRight className="w-4 h-4 stroke-[2] group-hover:translate-x-1 transition-transform" />
@@ -335,7 +333,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right Column: Architectural Monument Collage with Red Annotation */}
+              {/* Right Column: Colosseum Monument Collage with Red Annotation */}
               <div
                 className={`lg:col-span-6 relative transition-all duration-1000 ease-out ${
                   problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'
@@ -343,7 +341,7 @@ export default function LandingPage() {
               >
                 {/* Handwritten Note: CLEAR DATA. CALMER POSITIONS. MORE CONTROL. */}
                 <div className="absolute -top-8 right-2 sm:right-6 z-20 flex flex-col items-end pointer-events-none select-none">
-                  <span className="font-hand text-[#C84E29] text-lg sm:text-xl font-bold tracking-wide -rotate-3 text-right">
+                  <span className="font-hand text-[#C84E29] text-xl sm:text-2xl font-bold tracking-wide -rotate-3 text-right">
                     CLEAR DATA.<br />
                     CALMER POSITIONS.<br />
                     MORE CONTROL.
@@ -373,7 +371,7 @@ export default function LandingPage() {
         <section
           id="how-it-works"
           ref={stepsReveal.ref}
-          className="relative py-20 md:py-32 overflow-hidden"
+          className="relative py-16 md:py-28 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
@@ -381,9 +379,9 @@ export default function LandingPage() {
                 <span className="text-xs font-mono uppercase tracking-widest text-[#78736B] font-semibold block mb-2">
                   HOW IT WORKS
                 </span>
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-tight">
-                  Three{' '}
-                  <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C]">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-[#14130F] leading-tight">
+                  Three<br />
+                  <span className="italic font-serif text-[#C84E29]">
                     simple
                   </span>{' '}
                   steps.
@@ -425,42 +423,42 @@ export default function LandingPage() {
               
               {/* Step 01 */}
               <div className="space-y-3 md:pr-10">
-                <span className="text-3xl font-mono font-bold text-ink block">01</span>
+                <span className="text-4xl font-mono font-bold text-[#14130F] block">01</span>
                 <div className="flex items-center gap-2 text-[#C84E29] pt-1">
                   <Link2 className="w-4 h-4 stroke-[2]" />
-                  <h3 className="text-lg font-serif font-bold text-ink">
+                  <h3 className="text-xl font-serif font-bold text-[#14130F]">
                     Connect &amp; view
                   </h3>
                 </div>
-                <p className="text-sm font-sans text-ink-muted leading-relaxed">
+                <p className="text-sm font-sans text-[#78736B] leading-relaxed">
                   See your position and current risk in real time.
                 </p>
               </div>
 
               {/* Step 02 */}
-              <div className="space-y-3 md:px-10 md:border-l md:border-[#DFD9CC] dark:md:border-hairline">
-                <span className="text-3xl font-mono font-bold text-ink block">02</span>
+              <div className="space-y-3 md:px-10 md:border-l md:border-[#DFD9CC]">
+                <span className="text-4xl font-mono font-bold text-[#14130F] block">02</span>
                 <div className="flex items-center gap-2 text-[#C84E29] pt-1">
                   <BarChart3 className="w-4 h-4 stroke-[2]" />
-                  <h3 className="text-lg font-serif font-bold text-ink">
+                  <h3 className="text-xl font-serif font-bold text-[#14130F]">
                     Stress-test
                   </h3>
                 </div>
-                <p className="text-sm font-sans text-ink-muted leading-relaxed">
+                <p className="text-sm font-sans text-[#78736B] leading-relaxed">
                   Model different market scenarios and discover thresholds.
                 </p>
               </div>
 
               {/* Step 03 */}
-              <div className="space-y-3 md:pl-10 md:border-l md:border-[#DFD9CC] dark:md:border-hairline">
-                <span className="text-3xl font-mono font-bold text-ink block">03</span>
+              <div className="space-y-3 md:pl-10 md:border-l md:border-[#DFD9CC]">
+                <span className="text-4xl font-mono font-bold text-[#14130F] block">03</span>
                 <div className="flex items-center gap-2 text-[#C84E29] pt-1">
                   <Zap className="w-4 h-4 stroke-[2]" />
-                  <h3 className="text-lg font-serif font-bold text-ink">
+                  <h3 className="text-xl font-serif font-bold text-[#14130F]">
                     Take action
                   </h3>
                 </div>
-                <p className="text-sm font-sans text-ink-muted leading-relaxed">
+                <p className="text-sm font-sans text-[#78736B] leading-relaxed">
                   Adjust before you reach the edge with automated buffers.
                 </p>
               </div>
@@ -542,7 +540,7 @@ export default function LandingPage() {
                           className={`px-3 py-1 rounded-full transition-all duration-150 ${
                             timeframe === t
                               ? 'bg-[#14130F] text-white font-bold shadow-sm'
-                              : 'text-ink-muted hover:text-ink'
+                              : 'text-[#78736B] hover:text-[#14130F]'
                           }`}
                         >
                           {t}
@@ -554,7 +552,7 @@ export default function LandingPage() {
                   {/* Top 3 Live Calculated Metrics */}
                   <div className="grid grid-cols-3 gap-4 py-6 border-b border-[#F0EBE0]">
                     <div>
-                      <span className="text-[11px] font-mono uppercase text-ink-muted block">
+                      <span className="text-[11px] font-mono uppercase text-[#78736B] block">
                         Collateral ratio
                       </span>
                       <div className="flex items-center gap-2 mt-1">
@@ -576,7 +574,7 @@ export default function LandingPage() {
                     </div>
 
                     <div>
-                      <span className="text-[11px] font-mono uppercase text-ink-muted block">
+                      <span className="text-[11px] font-mono uppercase text-[#78736B] block">
                         MUSD debt
                       </span>
                       <div className="text-2xl sm:text-3xl font-mono font-bold text-[#14130F] mt-1 tracking-tight">
@@ -585,7 +583,7 @@ export default function LandingPage() {
                     </div>
 
                     <div>
-                      <span className="text-[11px] font-mono uppercase text-ink-muted block">
+                      <span className="text-[11px] font-mono uppercase text-[#78736B] block">
                         Collateral value
                       </span>
                       <div className="text-2xl sm:text-3xl font-mono font-bold text-[#14130F] mt-1 tracking-tight">
@@ -667,7 +665,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Timeline Month Labels */}
-                    <div className="flex justify-between text-xs font-mono text-ink-muted pt-2 border-t border-[#F0EBE0]">
+                    <div className="flex justify-between text-xs font-mono text-[#78736B] pt-2 border-t border-[#F0EBE0]">
                       {chartPoints.map((pt, i) => (
                         <span key={i}>{pt.label}</span>
                       ))}
@@ -680,7 +678,7 @@ export default function LandingPage() {
                     {/* Slider 1: MUSD Price */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-mono">
-                        <span className="text-ink-muted">MUSD Price</span>
+                        <span className="text-[#78736B]">MUSD Price</span>
                         <span className="font-bold text-[#14130F]">${musdPrice.toFixed(2)}</span>
                       </div>
                       <input
@@ -692,7 +690,7 @@ export default function LandingPage() {
                         onChange={(e) => setMusdPrice(parseFloat(e.target.value))}
                         className="w-full accent-[#C84E29] cursor-pointer h-1.5 bg-[#E5DFD3] rounded-lg"
                       />
-                      <div className="flex justify-between text-[10px] font-mono text-ink-muted">
+                      <div className="flex justify-between text-[10px] font-mono text-[#78736B]">
                         <span>$0.85</span>
                         <span>$1.05</span>
                       </div>
@@ -701,7 +699,7 @@ export default function LandingPage() {
                     {/* Slider 2: Collateral Value */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-mono">
-                        <span className="text-ink-muted">Collateral Value</span>
+                        <span className="text-[#78736B]">Collateral Value</span>
                         <span className="font-bold text-[#14130F]">${collateralValue.toLocaleString()}</span>
                       </div>
                       <input
@@ -713,7 +711,7 @@ export default function LandingPage() {
                         onChange={(e) => setCollateralValue(parseInt(e.target.value, 10))}
                         className="w-full accent-[#C84E29] cursor-pointer h-1.5 bg-[#E5DFD3] rounded-lg"
                       />
-                      <div className="flex justify-between text-[10px] font-mono text-ink-muted">
+                      <div className="flex justify-between text-[10px] font-mono text-[#78736B]">
                         <span>$2k</span>
                         <span>$25k</span>
                       </div>
@@ -722,7 +720,7 @@ export default function LandingPage() {
                     {/* Slider 3: Volatility */}
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-xs font-mono">
-                        <span className="text-ink-muted">Volatility</span>
+                        <span className="text-[#78736B]">Volatility</span>
                         <span className="font-bold text-[#14130F]">± {volatilityPercent}%</span>
                       </div>
                       <input
@@ -734,7 +732,7 @@ export default function LandingPage() {
                         onChange={(e) => setVolatilityPercent(parseInt(e.target.value, 10))}
                         className="w-full accent-[#C84E29] cursor-pointer h-1.5 bg-[#E5DFD3] rounded-lg"
                       />
-                      <div className="flex justify-between text-[10px] font-mono text-ink-muted">
+                      <div className="flex justify-between text-[10px] font-mono text-[#78736B]">
                         <span>5%</span>
                         <span>50%</span>
                       </div>
@@ -778,13 +776,13 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* Classical Collage Artwork Frame */}
-                <div className="relative select-none">
+                {/* David with Orange Sculpture Collage Artwork */}
+                <div className="relative select-none max-w-md mx-auto">
                   <Image
-                    src="/assets/colosseum-statue.png"
-                    alt="Classical Roman sculpture with cypress and Colosseum"
-                    width={500}
-                    height={600}
+                    src="/assets/belief-david-cutout.png"
+                    alt="Classical sculpture with sunglasses, orange fruit, and orange blossoms"
+                    width={560}
+                    height={680}
                     className="w-full h-auto object-contain filter drop-shadow-sm transform hover:scale-[1.02] transition-transform duration-700 ease-out"
                   />
                 </div>
@@ -800,13 +798,13 @@ export default function LandingPage() {
                   OUR BELIEF
                 </span>
 
-                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-[1.12] tracking-tight">
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-[#14130F] leading-[1.12] tracking-tight">
                   Better tools<br />
                   for a more stable<br />
                   ecosystem.
                 </h2>
 
-                <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-xl">
+                <p className="text-base sm:text-lg font-sans text-[#55514A] leading-relaxed max-w-xl">
                   A more informed community leads to fewer liquidations, healthier positions, and a
                   more resilient MUSD ecosystem. We build tools that give borrowers visibility and
                   control over their own risk parameters.
@@ -815,13 +813,13 @@ export default function LandingPage() {
                 {/* CTAs */}
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link href="/app/overview">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-[#C84E29] transition-all duration-200 shadow-sm">
                       <span>Explore Ballast</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
                   </Link>
                   <Link href="/whitepaper">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] bg-transparent text-[#14130F] font-sans font-medium text-sm hover:border-[#14130F] hover:text-[#C84E29] transition-all duration-200">
                       <span>Read the docs</span>
                     </button>
                   </Link>
@@ -843,9 +841,9 @@ export default function LandingPage() {
       {/* ========================================================= */}
       {/* BESPOKE EDITORIAL FOOTER                                   */}
       {/* ========================================================= */}
-      <footer className="border-t border-[#DFD9CC] dark:border-hairline bg-[#EFEAE0] dark:bg-[#0E0E0C] text-ink transition-colors">
+      <footer className="border-t border-[#DFD9CC] bg-[#EFEAE0] text-[#14130F] transition-colors">
         <div className="max-w-container mx-auto px-4 md:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start pb-12 border-b border-[#DFD9CC] dark:border-hairline">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start pb-12 border-b border-[#DFD9CC]">
             
             {/* Identity & Mission */}
             <div className="md:col-span-5 space-y-4">
@@ -853,22 +851,22 @@ export default function LandingPage() {
                 <span className="w-8 h-8 rounded-sm bg-[#14130F] text-white flex items-center justify-center border border-[#14130F] group-hover:bg-[#C84E29] transition-colors">
                   <Anchor className="w-4 h-4 stroke-[1.5]" />
                 </span>
-                <span className="font-serif font-bold text-xl text-ink tracking-tight">
+                <span className="font-serif font-bold text-xl text-[#14130F] tracking-tight">
                   {BRAND_NAME}
                 </span>
               </Link>
 
-              <p className="text-xs font-sans text-ink-muted leading-relaxed max-w-sm">
+              <p className="text-xs font-sans text-[#78736B] leading-relaxed max-w-sm">
                 Risk tools for a more stable MUSD ecosystem. Autonomous protection vaults, scenario modeling, and liquidation defenses on Mezo.
               </p>
 
               {/* Social icons */}
-              <div className="flex items-center gap-3 pt-2 text-ink-muted">
+              <div className="flex items-center gap-3 pt-2 text-[#78736B]">
                 <a
                   href="https://twitter.com"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-8 h-8 rounded-full border border-[#D5CFC2] dark:border-hairline flex items-center justify-center hover:text-[#C84E29] hover:border-[#C84E29] transition-colors"
+                  className="w-8 h-8 rounded-full border border-[#D5CFC2] flex items-center justify-center hover:text-[#C84E29] hover:border-[#C84E29] transition-colors"
                 >
                   <span className="font-mono text-xs font-bold">X</span>
                 </a>
@@ -876,7 +874,7 @@ export default function LandingPage() {
                   href="https://github.com/SIDDHUX9/BALLAST"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-8 h-8 rounded-full border border-[#D5CFC2] dark:border-hairline flex items-center justify-center hover:text-[#C84E29] hover:border-[#C84E29] transition-colors"
+                  className="w-8 h-8 rounded-full border border-[#D5CFC2] flex items-center justify-center hover:text-[#C84E29] hover:border-[#C84E29] transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
@@ -885,22 +883,22 @@ export default function LandingPage() {
 
             {/* Protocol Column */}
             <div className="md:col-span-2 space-y-2.5">
-              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-ink block mb-1">
+              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#14130F] block mb-1">
                 Protocol
               </span>
-              <ul className="space-y-2 text-xs font-sans text-ink-muted">
+              <ul className="space-y-2 text-xs font-sans text-[#78736B]">
                 <li>
-                  <Link href="/whitepaper" className="hover:text-ink transition-colors">
+                  <Link href="/whitepaper" className="hover:text-[#14130F] transition-colors">
                     Docs &amp; Spec
                   </Link>
                 </li>
                 <li>
-                  <a href="#simulator" className="hover:text-ink transition-colors">
+                  <a href="#simulator" className="hover:text-[#14130F] transition-colors">
                     Risk Framework
                   </a>
                 </li>
                 <li>
-                  <Link href="/app/activity" className="hover:text-ink transition-colors">
+                  <Link href="/app/activity" className="hover:text-[#14130F] transition-colors">
                     Changelog &amp; Logs
                   </Link>
                 </li>
@@ -909,22 +907,22 @@ export default function LandingPage() {
 
             {/* Community Column */}
             <div className="md:col-span-2 space-y-2.5">
-              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-ink block mb-1">
+              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#14130F] block mb-1">
                 Community
               </span>
-              <ul className="space-y-2 text-xs font-sans text-ink-muted">
+              <ul className="space-y-2 text-xs font-sans text-[#78736B]">
                 <li>
                   <a
                     href="https://github.com/SIDDHUX9/BALLAST"
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-ink transition-colors"
+                    className="hover:text-[#14130F] transition-colors"
                   >
                     GitHub Source
                   </a>
                 </li>
                 <li>
-                  <Link href="/app/alerts" className="hover:text-ink transition-colors">
+                  <Link href="/app/alerts" className="hover:text-[#14130F] transition-colors">
                     Telegram Bot
                   </Link>
                 </li>
@@ -933,7 +931,7 @@ export default function LandingPage() {
                     href="https://mezo.org"
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-ink transition-colors"
+                    className="hover:text-[#14130F] transition-colors"
                   >
                     Mezo Network
                   </a>
@@ -943,23 +941,23 @@ export default function LandingPage() {
 
             {/* Newsletter / Stay Updated Column */}
             <div className="md:col-span-3 space-y-3">
-              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-ink block mb-1">
+              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#14130F] block mb-1">
                 Get Updates
               </span>
-              <div className="flex items-center rounded-full bg-white dark:bg-[#1A1916] border border-[#D5CFC2] dark:border-hairline p-1 pl-3 shadow-inner">
+              <div className="flex items-center rounded-full bg-white border border-[#D5CFC2] p-1 pl-3 shadow-inner">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="bg-transparent text-xs font-sans text-ink focus:outline-none w-full"
+                  className="bg-transparent text-xs font-sans text-[#14130F] focus:outline-none w-full"
                 />
                 <button
                   type="button"
-                  className="w-7 h-7 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] flex items-center justify-center shrink-0 hover:bg-[#C84E29] transition-colors"
+                  className="w-7 h-7 rounded-full bg-[#14130F] text-white flex items-center justify-center shrink-0 hover:bg-[#C84E29] transition-colors"
                 >
                   <ArrowRight className="w-3.5 h-3.5 stroke-[2]" />
                 </button>
               </div>
-              <p className="text-[11px] font-mono text-ink-muted">
+              <p className="text-[11px] font-mono text-[#78736B]">
                 No noise. Just important protocol updates.
               </p>
             </div>
@@ -968,16 +966,16 @@ export default function LandingPage() {
 
           {/* Bottom Bar: Copyright & Architectural Sketch */}
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-xs font-mono text-ink-muted">
+            <span className="text-xs font-mono text-[#78736B]">
               &copy; 2026 Ballast. All rights reserved.
             </span>
 
             {/* Handwritten architectural sketch note */}
             <div className="flex items-center gap-3 select-none">
-              <span className="font-hand text-ink-muted text-lg sm:text-xl font-bold tracking-wide -rotate-2">
+              <span className="font-hand text-[#78736B] text-lg sm:text-xl font-bold tracking-wide -rotate-2">
                 STAY AHEAD.<br />STAY IN CONTROL.
               </span>
-              <svg width="60" height="32" viewBox="0 0 60 32" fill="none" className="text-ink-muted opacity-60">
+              <svg width="60" height="32" viewBox="0 0 60 32" fill="none" className="text-[#78736B] opacity-60">
                 <path d="M4 28H56M12 28V16M20 28V14M28 28V10C28 6 32 4 36 10V28M44 28V14M52 28V16M36 4V1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </div>
