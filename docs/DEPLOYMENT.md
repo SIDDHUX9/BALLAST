@@ -110,3 +110,31 @@ To redeploy or verify deployment idempotency:
    ```bash
    pnpm run smoke
    ```
+
+---
+
+## 7. Deploying Frontend to Vercel
+
+The monorepo includes a root [`vercel.json`](../vercel.json) that automatically handles monorepo build orchestration.
+
+### Steps to Deploy:
+1. **Import Git Repository**: In your Vercel Dashboard, import `https://github.com/SIDDHUX9/BALLAST`.
+2. **Project Settings**:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `./` (leave default repository root)
+   - **Build Command**: `pnpm build` (configured automatically via `vercel.json`)
+   - **Output Directory**: `apps/web/.next` (configured automatically via `vercel.json`)
+3. **Environment Variables**:
+   Add the following environment variables in Vercel Project Settings:
+
+   | Variable | Value | Description |
+   | :--- | :--- | :--- |
+   | `NEXT_PUBLIC_MEZO_RPC_URL` | `https://rpc.test.mezo.org` | Canonical Mezo Matsnet RPC |
+   | `NEXT_PUBLIC_MEZO_CHAIN_ID` | `31611` | Matsnet Chain ID |
+   | `NEXT_PUBLIC_MEZO_EXPLORER_URL` | `https://explorer.test.mezo.org` | Blockscout Explorer URL |
+   | `NEXT_PUBLIC_CONVEX_URL` | `https://hearty-pigeon-436.convex.cloud` | Active Convex Backend URL |
+   | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | *(Optional)* | WalletConnect Project ID |
+
+> [!NOTE]
+> In accordance with Rule 4 (Zero Secret Leaks), client environment variables are strictly public (`NEXT_PUBLIC_*`). Never add `PRIVATE_KEY` or `TG_TOKEN` to Vercel frontend settings. Private keys and bot tokens reside solely in encrypted keystores or secure backend environments (Convex).
+
