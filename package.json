@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @ballast/web dev",
-    "build": "pnpm --filter @ballast/shared build && pnpm --filter @ballast/keeper build && pnpm --filter @ballast/web build",
+    "build": "pnpm --filter @ballast/shared build && pnpm --filter @ballast/web build",
+    "build:all": "pnpm --filter @ballast/shared build && pnpm --filter @ballast/keeper build && pnpm --filter @ballast/web build",
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "pnpm --recursive run typecheck",

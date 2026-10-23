@@ -1,3 +1,10 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const sharedDist = path.resolve(__dirname, '../../packages/shared/dist/index.js');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -16,6 +23,7 @@ const nextConfig = {
   },
   turbopack: {
     resolveAlias: {
+      '@ballast/shared': '../../packages/shared/dist/index.js',
       '@x402/core/client': './src/lib/empty-module.js',
       '@x402/evm/exact/client': './src/lib/empty-module.js',
       '@x402/evm/upto/client': './src/lib/empty-module.js',
@@ -56,6 +64,10 @@ const nextConfig = {
         })
       );
     }
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@ballast/shared': sharedDist,
+    };
     config.resolve.fallback = {
       ...config.resolve.fallback,
       '@react-native-async-storage/async-storage': false,

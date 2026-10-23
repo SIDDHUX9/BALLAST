@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --turbo",
     "dev:webpack": "next dev",
+    "prebuild": "pnpm --filter @ballast/shared build",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
