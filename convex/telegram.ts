@@ -313,13 +313,14 @@ export const verifyAndLink = action({
         token: args.token,
         address: addr,
         nonce: args.nonce,
+        expiresAt: args.expiry,
         expiry: args.expiry,
         signature: args.signature as any,
         watchPercent: args.watchPercent,
       }
     );
 
-    if (!verifyResult.success) {
+    if (!verifyResult.ok) {
       throw new Error(verifyResult.error || "Signature verification failed");
     }
 
@@ -389,12 +390,13 @@ export const verifyAndUnlink = action({
       {
         address: addr,
         nonce: args.nonce,
+        expiresAt: args.expiry,
         expiry: args.expiry,
         signature: args.signature as any,
       }
     );
 
-    if (!verifyResult.success) {
+    if (!verifyResult.ok) {
       throw new Error(verifyResult.error || "Unlink signature verification failed");
     }
 
