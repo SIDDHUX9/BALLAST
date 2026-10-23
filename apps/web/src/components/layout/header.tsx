@@ -33,7 +33,7 @@ export function Header({ walletSlot }: HeaderProps) {
     { href: '#how-it-works', label: 'Mechanics' },
     { href: '#calculator', label: 'Waterline Calculator' },
     { href: '#honesty', label: 'Boundaries & Honesty' },
-    { href: '/design', label: 'Design System' },
+    { href: '/whitepaper', label: 'Whitepaper' },
   ];
 
   return (

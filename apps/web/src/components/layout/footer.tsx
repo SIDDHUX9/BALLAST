@@ -10,7 +10,7 @@ import {
   MATSNET_PROTOCOL_ADDRESSES,
 } from '@ballast/shared';
 import { MATSNET_DEPLOYMENT } from '../../lib/deployment';
-import { ExternalLink, Terminal, ShieldCheck } from 'lucide-react';
+import { ExternalLink, Terminal, ShieldCheck, BookOpen } from 'lucide-react';
 import { AddressChip } from '../ui/address-chip';
 import { MezoBadge } from '../ui/mezo-badge';
 
@@ -126,11 +126,11 @@ export function Footer() {
               <ExternalLink className="w-3 h-3 stroke-[1.5]" />
             </a>
             <Link
-              href="/design"
+              href="/whitepaper"
               className="text-xs font-mono text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
             >
-              <span>Design System Spec</span>
-              <Terminal className="w-3 h-3 stroke-[1.5]" />
+              <span>Whitepaper & Spec</span>
+              <BookOpen className="w-3 h-3 stroke-[1.5]" />
             </Link>
             <Link
               href="/app"

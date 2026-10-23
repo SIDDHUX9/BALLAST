@@ -618,9 +618,9 @@ export default function LandingPage() {
                     Enter Borrower App
                   </Button>
                 </Link>
-                <Link href="/design">
+                <Link href="/whitepaper">
                   <Button size="lg" variant="secondary">
-                    View Design System
+                    Read Whitepaper
                   </Button>
                 </Link>
               </div>
