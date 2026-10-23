@@ -503,6 +503,58 @@ export const getUserByChat = internalQuery({
   },
 });
 
+export const getAllUsersByChat = internalQuery({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .collect();
+  },
+});
+
+export const updateWatchPercentByChat = internalMutation({
+  args: { chatId: v.string(), watchPercent: v.number() },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .collect();
+    for (const u of users) {
+      await ctx.db.patch(u._id, { watchPercent: args.watchPercent });
+    }
+    return users.length;
+  },
+});
+
+export const setMuteByChat = internalMutation({
+  args: { chatId: v.string(), mutedUntil: v.number() },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .collect();
+    for (const u of users) {
+      await ctx.db.patch(u._id, { mutedUntil: args.mutedUntil });
+    }
+    return users.length;
+  },
+});
+
+export const unlinkByChat = internalMutation({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    const users = await ctx.db
+      .query("telegramUsers")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .collect();
+    for (const u of users) {
+      await ctx.db.delete(u._id);
+    }
+    return users.length;
+  },
+});
+
 export const updateOutboxStatus = internalMutation({
   args: {
     idempotencyKey: v.string(),
@@ -537,10 +589,27 @@ export const processWebhookUpdate = internalAction({
   args: { update: v.any() },
   handler: async (ctx, args) => {
     "use node";
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) return;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || process.env.TG_TOKEN;
+    if (!botToken) {
+      console.warn("TELEGRAM_BOT_TOKEN not configured in Convex environment");
+      return;
+    }
 
-    const bot = new Bot(botToken);
+    const bot = new Bot(botToken, {
+      botInfo: {
+        id: 8801692169,
+        is_bot: true,
+        first_name: "BALLAST",
+        username: "BALLASTBTC_bot",
+        can_join_groups: true,
+        can_read_all_group_messages: false,
+        supports_inline_queries: false,
+      },
+    });
+
+    bot.catch((err) => {
+      console.error("GrammY bot error in handleUpdate:", err);
+    });
 
     // /start command
     bot.command("start", async (c) => {
@@ -562,8 +631,242 @@ export const processWebhookUpdate = internalAction({
         return;
       }
 
+      // Plain /start without token
+      const linked = await ctx.runQuery(internal.telegram.getAllUsersByChat, { chatId });
+      if (linked && linked.length > 0) {
+        const addresses = linked.map((u: any) => `${u.address.slice(0, 6)}…${u.address.slice(-4)}`).join(", ");
+        await c.reply(
+          `${BRAND_NAME} Alert Bot\nLinked wallet(s): ${addresses}\nUse /status to inspect your vaults, or /help for commands.`
+        );
+      } else {
+        await c.reply(
+          `Welcome to ${BRAND_NAME} Alert Bot.\nTo link your wallet, connect your wallet at the ${BRAND_NAME} web app and select 'Link Telegram'.`
+        );
+      }
+    });
+
+    // /status command: reads on-chain live trove and vault metrics
+    bot.command("status", async (c) => {
+      const chatId = String(c.chat.id);
+      const linked = await ctx.runQuery(internal.telegram.getAllUsersByChat, { chatId });
+
+      if (!linked || linked.length === 0) {
+        await c.reply(
+          `No linked wallets found for this chat. Please connect your wallet in the ${BRAND_NAME} web app and select 'Link Telegram' under Alerts.`
+        );
+        return;
+      }
+
+      const rpcUrl = process.env.RPC_URL || "https://rpc.test.mezo.org";
+      const publicClient = createPublicClient({
+        chain: {
+          id: MATSNET_CHAIN_ID,
+          name: "Mezo Testnet",
+          nativeCurrency: { decimals: 18, name: "Bitcoin", symbol: "BTC" },
+          rpcUrls: { default: { http: [rpcUrl] } },
+        },
+        transport: http(rpcUrl),
+      });
+
+      const factoryAddress = (process.env.FACTORY_ADDRESS || "0x8d5b392839300b487addeecc35f5bc534111cd33") as Address;
+      const reports: string[] = [];
+
+      for (const user of linked) {
+        try {
+          // Look up vault address
+          let vaultAddress: Address | undefined;
+          try {
+            vaultAddress = (await publicClient.readContract({
+              address: factoryAddress,
+              abi: BallastFactoryAbi,
+              functionName: "vaultOf",
+              args: [user.address as Address],
+            })) as Address;
+          } catch {
+            // Not found
+          }
+
+          if (!vaultAddress || vaultAddress === "0x0000000000000000000000000000000000000000") {
+            reports.push(`Wallet: ${user.address}\nVault: None deployed yet.`);
+            continue;
+          }
+
+          // Read on-chain vault metrics
+          const [checkRes, musdRes, btcRes, ruleRes] = await Promise.all([
+            publicClient.readContract({
+              address: vaultAddress,
+              abi: BallastVaultAbi,
+              functionName: "checkDefense",
+            }) as Promise<[boolean, bigint, bigint, bigint]>,
+            publicClient.readContract({
+              address: vaultAddress,
+              abi: BallastVaultAbi,
+              functionName: "musdReserve",
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: vaultAddress,
+              abi: BallastVaultAbi,
+              functionName: "btcReserve",
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: vaultAddress,
+              abi: BallastVaultAbi,
+              functionName: "rule",
+            }) as Promise<[boolean, bigint, bigint, number]>,
+          ]);
+
+          const icr = checkRes[1];
+          const triggerICR = ruleRes[1];
+
+          // Trove debt & coll from TroveManager
+          const [debt, coll, status] = await Promise.all([
+            publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: [
+                {
+                  type: "function",
+                  name: "getTroveDebt",
+                  inputs: [{ name: "_borrower", type: "address" }],
+                  outputs: [{ name: "", type: "uint256" }],
+                  stateMutability: "view",
+                },
+              ],
+              functionName: "getTroveDebt",
+              args: [vaultAddress],
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: [
+                {
+                  type: "function",
+                  name: "getTroveColl",
+                  inputs: [{ name: "_borrower", type: "address" }],
+                  outputs: [{ name: "", type: "uint256" }],
+                  stateMutability: "view",
+                },
+              ],
+              functionName: "getTroveColl",
+              args: [vaultAddress],
+            }) as Promise<bigint>,
+            publicClient.readContract({
+              address: MATSNET_PROTOCOL_ADDRESSES.troveManager,
+              abi: [
+                {
+                  type: "function",
+                  name: "getTroveStatus",
+                  inputs: [{ name: "_borrower", type: "address" }],
+                  outputs: [{ name: "", type: "uint256" }],
+                  stateMutability: "view",
+                },
+              ],
+              functionName: "getTroveStatus",
+              args: [vaultAddress],
+            }) as Promise<bigint>,
+          ]);
+
+          const mcr = 1100000000000000000n; // 110%
+          const liqPrice = computeLiquidationPrice(coll, debt, mcr);
+          const icrPct = (Number((icr * 10000n) / PRECISION) / 100).toFixed(1);
+          const triggerPct = (Number((triggerICR * 10000n) / PRECISION) / 100).toFixed(1);
+          const watchPct = (user.watchPercent ?? Number(triggerPct) + 10).toFixed(1);
+
+          const liqPriceFormatted = Number(formatEther(liqPrice)).toLocaleString(undefined, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          });
+
+          const musdFormatted = Number(formatEther(musdRes)).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+          const btcFormatted = Number(formatEther(btcRes)).toFixed(4);
+
+          let statusStr = "Active";
+          if (status === 2n) statusStr = "Closed by Owner";
+          if (status === 3n) statusStr = "Liquidated";
+          if (status === 4n) statusStr = "Redeemed";
+
+          reports.push(
+            [
+              `🛡️ *Vault*: \`${vaultAddress}\``,
+              `📊 *Status*: ${statusStr}`,
+              `⚡ *ICR*: ${icrPct}% (Trigger: ${triggerPct}%, Watch: ${watchPct}%)`,
+              `🎯 *Liquidation Price*: $${liqPriceFormatted}`,
+              `💵 *MUSD Reserve*: ${musdFormatted} MUSD`,
+              `🪙 *BTC Reserve*: ${btcFormatted} BTC`,
+              `🔗 https://explorer.test.mezo.org/address/${vaultAddress}`,
+            ].join("\n")
+          );
+        } catch (err: any) {
+          reports.push(`Wallet: ${user.address}\nError reading vault status: ${err.message || String(err)}`);
+        }
+      }
+
+      await c.reply(reports.join("\n\n"), { parse_mode: "Markdown" });
+    });
+
+    // /watch <percent>
+    bot.command("watch", async (c) => {
+      const chatId = String(c.chat.id);
+      const text = c.match?.trim();
+
+      if (!text) {
+        await c.reply("Usage: /watch <percent>\nExample: /watch 145");
+        return;
+      }
+
+      const percent = parseFloat(text.replace("%", ""));
+      if (isNaN(percent) || percent < 110 || percent > 500) {
+        await c.reply("Invalid percentage. Watch level must be between 110% and 500%.");
+        return;
+      }
+
+      await ctx.runMutation(internal.telegram.updateWatchPercentByChat, {
+        chatId,
+        watchPercent: percent,
+      });
+
       await c.reply(
-        `Welcome to ${BRAND_NAME} Alert Bot.\nTo link your wallet, connect your wallet at the ${BRAND_NAME} web app and select 'Link Telegram'.`
+        `Watch alert level updated to ${percent.toFixed(1)}%.\nYou will be alerted if your ICR drops below this level.`
+      );
+    });
+
+    // /mute <hours>
+    bot.command("mute", async (c) => {
+      const chatId = String(c.chat.id);
+      const text = c.match?.trim();
+
+      if (!text) {
+        await c.reply("Usage: /mute <hours>\nExample: /mute 4");
+        return;
+      }
+
+      const hours = parseInt(text, 10);
+      if (isNaN(hours) || hours < 1 || hours > 168) {
+        await c.reply("Invalid duration. Mute period must be between 1 and 168 hours (1 week).");
+        return;
+      }
+
+      const mutedUntil = Date.now() + hours * 3600 * 1000;
+      await ctx.runMutation(internal.telegram.setMuteByChat, { chatId, mutedUntil });
+      const dateStr = new Date(mutedUntil).toUTCString();
+
+      await c.reply(`Alerts muted for ${hours} hours (until ${dateStr}).`);
+    });
+
+    // /unmute
+    bot.command("unmute", async (c) => {
+      const chatId = String(c.chat.id);
+      await ctx.runMutation(internal.telegram.setMuteByChat, { chatId, mutedUntil: 0 });
+      await c.reply("Alerts unmuted. You will receive active defense and warning alerts.");
+    });
+
+    // /unlink
+    bot.command("unlink", async (c) => {
+      const chatId = String(c.chat.id);
+      await ctx.runMutation(internal.telegram.unlinkByChat, { chatId });
+      await c.reply(
+        "Unlinked successfully. All wallet associations and alert preferences have been deleted."
       );
     });
 
@@ -574,7 +877,26 @@ export const processWebhookUpdate = internalAction({
       );
     });
 
-    // Execute update
+    // Catch-all message handler for plain text
+    bot.on("message:text", async (c) => {
+      if (c.message?.text?.startsWith("/")) return;
+
+      const chatId = String(c.chat.id);
+      const linked = await ctx.runQuery(internal.telegram.getAllUsersByChat, { chatId });
+
+      if (linked && linked.length > 0) {
+        await c.reply(
+          `Hello! I received your message: "${c.message.text}".\n\nCommands you can use:\n/status — Check live trove ICR & reserves\n/watch — Adjust warning alert threshold\n/mute — Pause notifications\n/help — Full command guide`
+        );
+      } else {
+        await c.reply(
+          `Hello! You have reached the ${BRAND_NAME} Alert Bot.\n\nTo link your Mezo wallet, visit the Ballast web app under Alerts and click 'Link Telegram'.\nType /help for available commands.`
+        );
+      }
+    });
+
+    // Initialize bot if not initialized and handle update
+    await bot.init();
     await bot.handleUpdate(args.update);
   },
 });

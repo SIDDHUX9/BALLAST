@@ -23,17 +23,18 @@ async function main() {
   });
 
   // 1. Resolve Bot Token
-  let token = values.token || process.env.TELEGRAM_BOT_TOKEN;
+  let token = values.token || process.env.TELEGRAM_BOT_TOKEN || process.env.TG_TOKEN;
   if (!token) {
     const envPath = path.resolve(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
-      const match = fs.readFileSync(envPath, 'utf-8').match(/TELEGRAM_BOT_TOKEN\s*=\s*(.+)/);
+      const envContent = fs.readFileSync(envPath, 'utf-8');
+      const match = envContent.match(/(?:TELEGRAM_BOT_TOKEN|TG_TOKEN)\s*=\s*(.+)/);
       if (match) token = match[1].trim();
     }
   }
 
   if (!token) {
-    console.error('Error: TELEGRAM_BOT_TOKEN not provided. Pass --token or set in .env');
+    console.error('Error: TELEGRAM_BOT_TOKEN or TG_TOKEN not provided. Pass --token or set in .env');
     process.exit(1);
   }
 
