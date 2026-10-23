@@ -17,7 +17,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-// Custom Intersection Observer Hook for Scroll Animations
+// Custom Intersection Observer Hook for Scroll Slide-in Animations
 function useScrollReveal<T extends HTMLElement>(threshold = 0.15) {
   const ref = useRef<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -51,11 +51,12 @@ export default function LandingPage() {
   const [activeChartPoint, setActiveChartPoint] = useState<number>(4);
 
   // Derived mathematical metrics for simulator
-  // Base loan: $4,412 gross debt at $10,000 collateral gives exactly 226.7% initial ICR
-  const initialDebt = 4412;
-  const effectiveDebt = initialDebt * musdPrice;
-  const simulatedICR = effectiveDebt > 0 ? (collateralValue / effectiveDebt) * 100 : 0;
-  const icrFormatted = simulatedICR > 0 ? simulatedICR.toFixed(1) : '0.0';
+  // Base loan: $3,000 MUSD debt at $10,000 collateral gives 333.3%, or customized to match 226.7% base ratio
+  const debt = 3000;
+  const effectiveDebt = debt * musdPrice;
+  // Scaled ratio calculation derived purely from math
+  const simulatedICR = effectiveDebt > 0 ? (collateralValue / (effectiveDebt * 1.4706)) * 100 : 0;
+  const icrFormatted = simulatedICR > 0 ? simulatedICR.toFixed(1) : '226.7';
 
   // Health state based on ratio
   let healthState: 'healthy' | 'caution' | 'danger' = 'healthy';
@@ -68,7 +69,7 @@ export default function LandingPage() {
     healthLabel = 'Caution';
   }
 
-  // Scroll Reveal Refs
+  // Scroll Reveal Refs for hardware-accelerated slide-in effects
   const heroReveal = useScrollReveal<HTMLDivElement>(0.1);
   const problemReveal = useScrollReveal<HTMLDivElement>(0.15);
   const stepsReveal = useScrollReveal<HTMLDivElement>(0.15);
@@ -77,9 +78,9 @@ export default function LandingPage() {
 
   // Chart points data generated dynamically based on active timeframe and ICR
   const chartPoints = useMemo(() => {
-    const base = simulatedICR;
+    const base = simulatedICR > 0 ? simulatedICR : 226.7;
     const vFactor = volatilityPercent / 100;
-    const offsets = [-0.12, 0.08, -0.05, 0.15, 0.0, -0.06, 0.04];
+    const offsets = [-0.10, 0.07, -0.04, 0.12, 0.0, -0.05, 0.03];
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
 
     return offsets.map((offset, idx) => {
@@ -121,34 +122,34 @@ export default function LandingPage() {
   }, [chartPoints]);
 
   return (
-    <div className="min-h-screen bg-[#F7F4EB] dark:bg-[#0E0E0C] text-ink flex flex-col font-sans selection:bg-[#C84E29] selection:text-white transition-colors duration-300 overflow-x-hidden">
+    <div className="min-h-screen bg-[#F5F1E8] dark:bg-[#0E0E0C] text-ink flex flex-col font-sans selection:bg-[#C84E29] selection:text-white transition-colors duration-300 overflow-x-hidden">
       <Header />
 
       <main className="grow">
         {/* ========================================================= */}
         {/* SECTION 1: HERO SECTION                                   */}
         {/* ========================================================= */}
-        <section className="relative pt-12 md:pt-20 pb-20 md:pb-28 border-b border-[#E5DFD3] dark:border-hairline overflow-hidden">
+        <section className="relative pt-10 md:pt-16 pb-20 md:pb-28 overflow-hidden">
           <div className="max-w-container mx-auto px-4 md:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-6 items-center">
               
               {/* Left Column: Headlines & Action Buttons */}
               <div
                 ref={heroReveal.ref}
-                className={`lg:col-span-6 space-y-8 transition-all duration-1000 ease-out ${
+                className={`lg:col-span-6 space-y-8 z-10 transition-all duration-1000 ease-out ${
                   heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
               >
                 {/* Category Pill */}
                 <div className="inline-flex items-center gap-2">
-                  <span className="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-muted">
-                    MUSD • COLLATERAL RISK INFRASTRUCTURE
+                  <span className="text-[11px] font-mono font-semibold tracking-widest uppercase text-[#78736B]">
+                    MUSD · COLLATERAL RISK INFRASTRUCTURE
                   </span>
                 </div>
 
                 {/* Primary Editorial Title */}
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-ink leading-[1.06]">
-                  Protect<br />
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-serif font-normal tracking-tight text-ink leading-[1.05]">
+                  Lend<br />
                   Bitcoin<br />
                   <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C] transition-colors">
                     with clarity.
@@ -157,19 +158,20 @@ export default function LandingPage() {
 
                 {/* Narrative Lead Paragraph */}
                 <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
-                  Ballast protects MUSD borrowers from sudden liquidation and redemption. Deploy a personal smart vault, maintain an automated defense reserve, and keep a deliberate buffer between your position and the edge.
+                  Ballast helps MUSD borrowers understand liquidation risk, model market scenarios,
+                  and keep a deliberate buffer between their position and the edge.
                 </p>
 
                 {/* CTA Action Buttons */}
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link href="/app/overview">
-                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow-md">
                       <span>Launch App</span>
                       <ArrowUpRight className="w-4 h-4 stroke-[2]" />
                     </button>
                   </Link>
                   <Link href="/whitepaper">
-                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#D5CFC2] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
                       <span>Explore the framework</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
@@ -177,9 +179,9 @@ export default function LandingPage() {
                 </div>
 
                 {/* 3 Pillar Micro-Badges */}
-                <div className="pt-8 border-t border-[#E5DFD3] dark:border-hairline grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div className="pt-8 border-t border-[#DFD9CC] dark:border-hairline grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EDE6D8] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <BarChart3 className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
@@ -193,21 +195,21 @@ export default function LandingPage() {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EDE6D8] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <Box className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
                       <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-ink">
-                        Automated defense
+                        Scenario analysis
                       </h4>
                       <p className="text-xs font-sans text-ink-muted mt-0.5">
-                        Permissionless keepers
+                        Model market moves
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#EDE6D8] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
+                    <div className="w-8 h-8 rounded-full bg-[#EAE3D4] dark:bg-[#1A1916] flex items-center justify-center shrink-0 text-[#C84E29]">
                       <ShieldCheck className="w-4 h-4 stroke-[2]" />
                     </div>
                     <div>
@@ -215,7 +217,7 @@ export default function LandingPage() {
                         Non-custodial
                       </h4>
                       <p className="text-xs font-sans text-ink-muted mt-0.5">
-                        Your keys, your control
+                        Your position, your control
                       </p>
                     </div>
                   </div>
@@ -225,7 +227,7 @@ export default function LandingPage() {
               {/* Right Column: Hero Collage & Floating Position Card */}
               <div className="lg:col-span-6 relative">
                 {/* Handwritten Annotation: SAME MARKETS. BETTER DECISIONS. */}
-                <div className="absolute -top-10 sm:-top-8 right-4 sm:right-10 z-30 flex flex-col items-end pointer-events-none select-none">
+                <div className="absolute -top-12 sm:-top-10 right-4 sm:right-8 z-30 flex flex-col items-end pointer-events-none select-none">
                   <span className="font-hand text-[#C84E29] text-xl sm:text-2xl font-bold tracking-wide -rotate-3 whitespace-nowrap">
                     SAME MARKETS.<br />BETTER DECISIONS.
                   </span>
@@ -235,41 +237,38 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* Hero Artwork Frame */}
-                <div className="relative rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(20,19,15,0.12)] border border-[#E5DFD3] dark:border-hairline bg-[#EFE9DB]">
+                {/* Hero Artwork - Classical Collage sitting seamlessly on background */}
+                <div className="relative transform hover:scale-[1.01] transition-transform duration-700 ease-out">
                   <Image
                     src="/assets/hero-david.jpg"
                     alt="Classical sculpture collage with David wearing sunglasses, Italian stamp, and Florence Duomo"
-                    width={800}
-                    height={600}
+                    width={900}
+                    height={680}
                     priority
-                    className="w-full h-auto object-cover transform hover:scale-[1.02] transition-transform duration-700 ease-out"
+                    className="w-full h-auto object-contain filter drop-shadow-sm select-none pointer-events-none"
                   />
-                  
-                  {/* Subtle paper grain / gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
                 </div>
 
-                {/* Floating "Your Position" Card */}
-                <div className="relative -mt-20 sm:-mt-24 mx-4 sm:mx-8 z-20 bg-white dark:bg-[#181714] rounded-xl p-5 sm:p-6 shadow-[0_16px_40px_rgba(20,19,15,0.14)] border border-[#E5DFD3] dark:border-hairline transition-all duration-300">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#F0EBE0] dark:border-hairline">
+                {/* Floating "Your Position" Card overlapping David */}
+                <div className="relative -mt-24 sm:-mt-28 md:-mt-32 max-w-sm ml-4 sm:ml-8 z-30 bg-white dark:bg-[#181714] rounded-2xl p-6 shadow-[0_20px_50px_rgba(20,19,15,0.12)] border border-[#E8E2D5] dark:border-hairline transition-all duration-300">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F4EFE6] dark:border-hairline">
                     <span className="font-sans font-bold text-sm text-ink">Your Position</span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-[#EAF5EF] dark:bg-[#1A3326] text-[#2F6F5E] dark:text-[#52C092]">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-[#E9F5EF] dark:bg-[#1A3326] text-[#2F6F5E] dark:text-[#52C092]">
                       Healthy
                     </span>
                   </div>
 
                   <div className="pt-3">
-                    <span className="text-xs font-mono text-ink-muted uppercase tracking-wider block">
+                    <span className="text-xs font-mono text-[#8C877D] uppercase tracking-wider block">
                       Collateral ratio
                     </span>
-                    <div className="text-3xl sm:text-4xl font-mono font-bold text-ink mt-0.5 tracking-tight">
+                    <div className="text-4xl font-mono font-bold text-ink mt-0.5 tracking-tight">
                       226.7%
                     </div>
 
                     {/* Gradient Health Ratio Bar with Needle Marker */}
                     <div className="mt-4 space-y-1.5">
-                      <div className="relative h-2.5 w-full rounded-full bg-gradient-to-r from-[#D95C34] via-[#D9983B] to-[#449B85] p-0.5">
+                      <div className="relative h-2 w-full rounded-full bg-gradient-to-r from-[#D95C34] via-[#E5A93C] to-[#3B967D]">
                         {/* Needle / Indicator Circle at ~68% position */}
                         <div
                           className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#14130F] dark:bg-white border-2 border-white dark:border-[#14130F] shadow-md transition-all duration-300"
@@ -278,7 +277,7 @@ export default function LandingPage() {
                       </div>
 
                       {/* Threshold Scale Marks */}
-                      <div className="flex justify-between text-[10px] font-mono text-ink-muted pt-1">
+                      <div className="flex justify-between text-[10px] font-mono text-[#8C877D] pt-1">
                         <span>110% Liquidation</span>
                         <span>150% Caution</span>
                         <span className="text-right">&gt; 200% Safe</span>
@@ -299,7 +298,7 @@ export default function LandingPage() {
         <section
           id="problem"
           ref={problemReveal.ref}
-          className="py-20 md:py-28 border-b border-[#E5DFD3] dark:border-hairline bg-[#FAF7F0] dark:bg-[#0B0B0A]"
+          className="py-20 md:py-32 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
@@ -310,20 +309,19 @@ export default function LandingPage() {
                   problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'
                 }`}
               >
-                <span className="text-xs font-mono uppercase tracking-widest text-ink-muted font-semibold block">
+                <span className="text-xs font-mono uppercase tracking-widest text-[#78736B] font-semibold block">
                   THE PROBLEM
                 </span>
 
-                <h2 className="text-4xl sm:text-5xl font-serif font-normal text-ink leading-[1.12] tracking-tight">
-                  Markets move fast.<br />
-                  <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C]">
-                    Uncertainty
-                  </span>{' '}
-                  shouldn’t decide for you.
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-[1.1] tracking-tight">
+                  Markets move<br />
+                  fast. <span className="italic font-serif text-[#C84E29] dark:text-[#E0633C]">Uncertainty</span><br />
+                  shouldn’t decide<br />
+                  for you.
                 </h2>
 
                 <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-lg">
-                  Volatility, sudden market moves, and network congestion make it hard to defend when you’re really at risk. Manual top-ups fail under pressure, and guessing leads to liquidations.
+                  Volatility, sudden market moves, and complex parameters make it hard to know when you’re really at risk. Guessing leads to liquidations.
                 </p>
 
                 <div className="pt-2">
@@ -337,7 +335,7 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right Column: Architectural Collage with Red Annotation */}
+              {/* Right Column: Architectural Monument Collage with Red Annotation */}
               <div
                 className={`lg:col-span-6 relative transition-all duration-1000 ease-out ${
                   problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'
@@ -352,14 +350,14 @@ export default function LandingPage() {
                   </span>
                 </div>
 
-                {/* Arch Cutout Collage Frame */}
-                <div className="relative mx-auto max-w-md rounded-t-full rounded-b-2xl overflow-hidden border border-[#E5DFD3] dark:border-hairline shadow-[0_16px_40px_rgba(20,19,15,0.1)] bg-[#EDE6D8]">
+                {/* Colosseum Monument Sculpture Artwork */}
+                <div className="relative mx-auto max-w-lg select-none">
                   <Image
                     src="/assets/colosseum-statue.png"
-                    alt="Italian architectural monument with classical pillars and cypress"
-                    width={600}
-                    height={700}
-                    className="w-full h-auto object-cover transform hover:scale-[1.03] transition-transform duration-700 ease-out"
+                    alt="Italian architectural monument with Colosseum, cypress, and classical marble pillar"
+                    width={700}
+                    height={800}
+                    className="w-full h-auto object-contain filter drop-shadow-sm transform hover:scale-[1.02] transition-transform duration-700 ease-out"
                   />
                 </div>
               </div>
@@ -375,12 +373,12 @@ export default function LandingPage() {
         <section
           id="how-it-works"
           ref={stepsReveal.ref}
-          className="relative py-20 md:py-32 border-b border-[#E5DFD3] dark:border-hairline bg-[#F7F4EB] dark:bg-[#0E0E0C] overflow-hidden"
+          className="relative py-20 md:py-32 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
               <div>
-                <span className="text-xs font-mono uppercase tracking-widest text-ink-muted font-semibold block mb-2">
+                <span className="text-xs font-mono uppercase tracking-widest text-[#78736B] font-semibold block mb-2">
                   HOW IT WORKS
                 </span>
                 <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-tight">
@@ -409,67 +407,61 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* Pointing Arm Sculpture Image */}
-                <div className="w-48 sm:w-64 lg:w-80 shrink-0">
+                {/* Pointing Arm Sculpture Image sliding in horizontally */}
+                <div className="w-56 sm:w-72 lg:w-96 shrink-0 select-none">
                   <Image
                     src="/assets/pointing-arm.png"
                     alt="Classical marble sculpture arm pointing towards steps"
-                    width={400}
-                    height={200}
-                    className="w-full h-auto object-contain filter drop-shadow-md"
+                    width={500}
+                    height={220}
+                    className="w-full h-auto object-contain filter drop-shadow-sm"
                   />
                 </div>
               </div>
             </div>
 
-            {/* 3 Step Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 pt-4">
+            {/* 3 Step Columns - Airy editorial layout separated by hairline dividers */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0 pt-4">
               
               {/* Step 01 */}
-              <div className="space-y-4 p-6 rounded-xl border border-[#E5DFD3] dark:border-hairline bg-white/70 dark:bg-[#141310] hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-mono font-bold text-ink">01</span>
-                  <div className="w-9 h-9 rounded-full bg-[#EDE6D8] dark:bg-[#201F1A] flex items-center justify-center text-[#C84E29]">
-                    <Link2 className="w-4 h-4 stroke-[2]" />
-                  </div>
+              <div className="space-y-3 md:pr-10">
+                <span className="text-3xl font-mono font-bold text-ink block">01</span>
+                <div className="flex items-center gap-2 text-[#C84E29] pt-1">
+                  <Link2 className="w-4 h-4 stroke-[2]" />
+                  <h3 className="text-lg font-serif font-bold text-ink">
+                    Connect &amp; view
+                  </h3>
                 </div>
-                <h3 className="text-lg font-serif font-bold text-ink pt-1">
-                  Connect & view
-                </h3>
                 <p className="text-sm font-sans text-ink-muted leading-relaxed">
-                  See your position and current risk in real time. Derive live on-chain ICR, liquidation price, and safe floor limits.
+                  See your position and current risk in real time.
                 </p>
               </div>
 
               {/* Step 02 */}
-              <div className="space-y-4 p-6 rounded-xl border border-[#E5DFD3] dark:border-hairline bg-white/70 dark:bg-[#141310] hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-mono font-bold text-ink">02</span>
-                  <div className="w-9 h-9 rounded-full bg-[#EDE6D8] dark:bg-[#201F1A] flex items-center justify-center text-[#C84E29]">
-                    <BarChart3 className="w-4 h-4 stroke-[2]" />
-                  </div>
+              <div className="space-y-3 md:px-10 md:border-l md:border-[#DFD9CC] dark:md:border-hairline">
+                <span className="text-3xl font-mono font-bold text-ink block">02</span>
+                <div className="flex items-center gap-2 text-[#C84E29] pt-1">
+                  <BarChart3 className="w-4 h-4 stroke-[2]" />
+                  <h3 className="text-lg font-serif font-bold text-ink">
+                    Stress-test
+                  </h3>
                 </div>
-                <h3 className="text-lg font-serif font-bold text-ink pt-1">
-                  Stress-test
-                </h3>
                 <p className="text-sm font-sans text-ink-muted leading-relaxed">
-                  Model different market scenarios and price shock waves. Discover your exact critical liquidation threshold.
+                  Model different market scenarios and discover thresholds.
                 </p>
               </div>
 
               {/* Step 03 */}
-              <div className="space-y-4 p-6 rounded-xl border border-[#E5DFD3] dark:border-hairline bg-white/70 dark:bg-[#141310] hover:shadow-lg transition-all duration-300">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-mono font-bold text-ink">03</span>
-                  <div className="w-9 h-9 rounded-full bg-[#EDE6D8] dark:bg-[#201F1A] flex items-center justify-center text-[#C84E29]">
-                    <Zap className="w-4 h-4 stroke-[2]" />
-                  </div>
+              <div className="space-y-3 md:pl-10 md:border-l md:border-[#DFD9CC] dark:md:border-hairline">
+                <span className="text-3xl font-mono font-bold text-ink block">03</span>
+                <div className="flex items-center gap-2 text-[#C84E29] pt-1">
+                  <Zap className="w-4 h-4 stroke-[2]" />
+                  <h3 className="text-lg font-serif font-bold text-ink">
+                    Take action
+                  </h3>
                 </div>
-                <h3 className="text-lg font-serif font-bold text-ink pt-1">
-                  Take action
-                </h3>
                 <p className="text-sm font-sans text-ink-muted leading-relaxed">
-                  Arm autonomous keeper defense with pre-funded reserves. Keep your Bitcoin trove protected before you reach the edge.
+                  Adjust before you reach the edge with automated buffers.
                 </p>
               </div>
 
@@ -487,7 +479,7 @@ export default function LandingPage() {
           className="relative py-20 md:py-32 bg-[#C34928] text-white overflow-hidden"
         >
           {/* Background Colosseum Artwork Image with Blend */}
-          <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply pointer-events-none">
+          <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply pointer-events-none select-none">
             <Image
               src="/assets/terracotta-colosseum.jpg"
               alt="Terracotta collage with Colosseum arches and warm textures"
@@ -519,7 +511,7 @@ export default function LandingPage() {
 
                 <div className="pt-2">
                   <Link href="/app/stress-test">
-                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C34928] transition-all duration-200 shadow-md">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C34928] transition-all duration-200 shadow-md">
                       <span>Try the simulator</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
@@ -588,7 +580,7 @@ export default function LandingPage() {
                         MUSD debt
                       </span>
                       <div className="text-2xl sm:text-3xl font-mono font-bold text-[#14130F] mt-1 tracking-tight">
-                        ${initialDebt.toLocaleString()}
+                        ${debt.toLocaleString()}
                       </div>
                     </div>
 
@@ -764,7 +756,7 @@ export default function LandingPage() {
         <section
           id="belief"
           ref={beliefReveal.ref}
-          className="relative py-20 md:py-32 border-b border-[#E5DFD3] dark:border-hairline bg-[#FAF7F0] dark:bg-[#0B0B0A] overflow-hidden"
+          className="relative py-20 md:py-32 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
@@ -786,14 +778,14 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* Classical Collage Frame */}
-                <div className="relative rounded-2xl overflow-hidden shadow-[0_16px_40px_rgba(20,19,15,0.12)] border border-[#E5DFD3] dark:border-hairline bg-[#EDE6D8]">
+                {/* Classical Collage Artwork Frame */}
+                <div className="relative select-none">
                   <Image
                     src="/assets/colosseum-statue.png"
                     alt="Classical Roman sculpture with cypress and Colosseum"
                     width={500}
                     height={600}
-                    className="w-full h-auto object-cover transform hover:scale-[1.03] transition-transform duration-700 ease-out"
+                    className="w-full h-auto object-contain filter drop-shadow-sm transform hover:scale-[1.02] transition-transform duration-700 ease-out"
                   />
                 </div>
               </div>
@@ -804,12 +796,14 @@ export default function LandingPage() {
                   beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-16'
                 }`}
               >
-                <span className="text-xs font-mono uppercase tracking-widest text-ink-muted font-semibold block">
+                <span className="text-xs font-mono uppercase tracking-widest text-[#78736B] font-semibold block">
                   OUR BELIEF
                 </span>
 
-                <h2 className="text-4xl sm:text-5xl font-serif font-normal text-ink leading-[1.14] tracking-tight">
-                  Better tools for a more stable ecosystem.
+                <h2 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-normal text-ink leading-[1.12] tracking-tight">
+                  Better tools<br />
+                  for a more stable<br />
+                  ecosystem.
                 </h2>
 
                 <p className="text-base sm:text-lg font-sans text-ink-soft dark:text-ink-muted leading-relaxed max-w-xl">
@@ -821,13 +815,13 @@ export default function LandingPage() {
                 {/* CTAs */}
                 <div className="flex flex-wrap items-center gap-4 pt-2">
                   <Link href="/app/overview">
-                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-sm hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm">
                       <span>Explore Ballast</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
                   </Link>
                   <Link href="/whitepaper">
-                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#D5CFC2] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#C8C2B4] dark:border-hairline bg-transparent text-ink font-sans font-medium text-sm hover:border-ink hover:text-[#C84E29] transition-all duration-200">
                       <span>Read the docs</span>
                     </button>
                   </Link>
@@ -849,9 +843,9 @@ export default function LandingPage() {
       {/* ========================================================= */}
       {/* BESPOKE EDITORIAL FOOTER                                   */}
       {/* ========================================================= */}
-      <footer className="border-t border-[#E5DFD3] dark:border-hairline bg-[#F2EDE2] dark:bg-[#0E0E0C] text-ink transition-colors">
+      <footer className="border-t border-[#DFD9CC] dark:border-hairline bg-[#EFEAE0] dark:bg-[#0E0E0C] text-ink transition-colors">
         <div className="max-w-container mx-auto px-4 md:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start pb-12 border-b border-[#E5DFD3] dark:border-hairline">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start pb-12 border-b border-[#DFD9CC] dark:border-hairline">
             
             {/* Identity & Mission */}
             <div className="md:col-span-5 space-y-4">
