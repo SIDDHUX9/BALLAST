@@ -18,7 +18,17 @@ import {
 import { Handwritten } from '../components/landing/handwritten';
 
 // Smooth scroll reveal hook
-function useScrollReveal<T extends HTMLElement>(threshold = 0.05) {
+interface ScrollRevealOptions {
+  threshold?: number;
+  rootMargin?: string;
+  resetOnExit?: boolean;
+}
+
+function useScrollReveal<T extends HTMLElement>(options?: number | ScrollRevealOptions) {
+  const threshold = typeof options === 'number' ? options : options?.threshold ?? 0.1;
+  const rootMargin = typeof options === 'number' ? '0px 0px -40px 0px' : options?.rootMargin ?? '0px 0px -40px 0px';
+  const resetOnExit = typeof options === 'number' ? false : options?.resetOnExit ?? false;
+
   const ref = useRef<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -29,26 +39,28 @@ function useScrollReveal<T extends HTMLElement>(threshold = 0.05) {
       return;
     }
 
+    if (typeof IntersectionObserver === 'undefined') {
+      setIsVisible(true);
+      return;
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
+        } else if (resetOnExit) {
+          setIsVisible(false);
         }
       },
-      { threshold, rootMargin: '0px 0px -20px 0px' }
+      { threshold, rootMargin }
     );
 
     observer.observe(node);
 
-    const fallbackTimer = setTimeout(() => {
-      setIsVisible(true);
-    }, 150);
-
     return () => {
       observer.disconnect();
-      clearTimeout(fallbackTimer);
     };
-  }, [threshold]);
+  }, [threshold, rootMargin, resetOnExit]);
 
   return { ref, isVisible };
 }
@@ -89,6 +101,23 @@ export default function LandingPage() {
   const stepsReveal = useScrollReveal<HTMLDivElement>(0.05);
   const simulatorReveal = useScrollReveal<HTMLDivElement>(0.05);
   const beliefReveal = useScrollReveal<HTMLDivElement>(0.05);
+
+  // Dedicated Artwork Slide-in Reveal Refs (animate as user scrolls into view)
+  const problemArtworkReveal = useScrollReveal<HTMLDivElement>({
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px',
+    resetOnExit: true,
+  });
+  const pointingArmReveal = useScrollReveal<HTMLDivElement>({
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px',
+    resetOnExit: true,
+  });
+  const beliefDavidReveal = useScrollReveal<HTMLDivElement>({
+    threshold: 0.1,
+    rootMargin: '0px 0px -40px 0px',
+    resetOnExit: true,
+  });
 
   // Chart points data generated dynamically based on active timeframe and ICR
   const chartPoints = useMemo(() => {
@@ -142,16 +171,18 @@ export default function LandingPage() {
         {/* ========================================================= */}
         {/* SECTION 1: HERO SECTION                                   */}
         {/* ========================================================= */}
-        <section className="relative pt-4 sm:pt-8 md:pt-10 pb-16 sm:pb-20 md:pb-28 overflow-hidden">
-          <div className="w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0">
+        <section
+          className="relative pt-4 sm:pt-8 md:pt-10 pb-16 sm:pb-20 md:pb-28 overflow-hidden bg-cover bg-right-top bg-no-repeat"
+          style={{ backgroundImage: "url('/assets/landing/hero-david.webp')" }}
+        >
+          <div className="relative z-10 w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
-              
+
               {/* Left Column: Headlines & CTA Buttons */}
               <div
                 ref={heroReveal.ref}
-                className={`lg:col-span-5 space-y-6 z-10 pr-6 sm:pr-8 transition-all duration-700 ease-out ${
-                  heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                }`}
+                className={`lg:col-span-5 space-y-6 z-10 pr-6 sm:pr-8 transition-all duration-700 ease-out ${heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
               >
                 {/* Eyebrow */}
                 <div className="inline-flex items-center">
@@ -233,29 +264,18 @@ export default function LandingPage() {
 
               {/* Right Column: Hero Collage Bleeding to Right Viewport Edge and Header */}
               <div className="lg:col-span-7 relative flex justify-end pr-0 mt-10 lg:mt-0">
-                
+
                 {/* Handwritten Annotation top right */}
-                <div className="absolute -top-14 sm:-top-12 right-10 sm:right-24 z-30">
+                <div className="absolute -top-14 sm:-top-12 right-28 sm:right-48 lg:right-60 xl:right-72 z-30">
                   <Handwritten arrow="curved-down-left" rotation="-rotate-3">
                     SAME MARKETS.{'\n'}BETTER DECISIONS.
                   </Handwritten>
                 </div>
 
-                {/* Hero Artwork Collage */}
-                <div className="relative w-full max-w-[820px] lg:max-w-[880px] xl:max-w-[940px] ml-auto mr-0">
-                  <div className="w-full [mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_14%,black_100%)]">
-                    <Image
-                      src="/assets/landing/hero-david.webp"
-                      alt="Classical sculpture collage with David wearing sunglasses, Italian stamp, and Florence Duomo"
-                      width={1024}
-                      height={575}
-                      priority
-                      className="w-full h-auto object-contain filter drop-shadow-sm select-none"
-                    />
-                  </div>
-
-                  {/* Overlapping "Your Position" Card */}
-                  <div className="absolute -bottom-6 sm:-bottom-8 left-0 sm:left-4 lg:left-6 z-20 w-[310px] sm:w-[350px] bg-white rounded-2xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(10,21,33,0.12)] border border-[#0A1521]/10 transition-transform duration-300 hover:scale-[1.01]">
+                {/* Hero Artwork Spacer / Position Card */}
+                <div className="relative w-full max-w-[820px] lg:max-w-[880px] xl:max-w-[940px] ml-auto mr-0 aspect-[1024/575]">
+                  {/* Overlapping "Your Position" Card positioned at bottom-right */}
+                  <div className="absolute -bottom-28 sm:-bottom-36 lg:-bottom-40 xl:-bottom-44 right-2 sm:right-6 lg:right-8 z-20 w-[310px] sm:w-[350px] bg-white rounded-2xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(10,21,33,0.12)] border border-[#0A1521]/10 transition-transform duration-300 hover:scale-[1.01]">
                     <div className="flex items-center justify-between pb-3 border-b border-[#0A1521]/08">
                       <span className="font-sans font-bold text-sm sm:text-base text-[#0A1521]">Your Position</span>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#BCD99F] text-[#2D6A2E]">
@@ -308,12 +328,11 @@ export default function LandingPage() {
         >
           <div className="w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0">
             <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
-              
+
               {/* Left Column: Problem Narrative */}
               <div
-                className={`lg:col-span-5 space-y-6 pr-6 sm:pr-8 transition-all duration-700 ease-out ${
-                  problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                }`}
+                className={`lg:col-span-5 space-y-6 pr-6 sm:pr-8 transition-all duration-700 ease-out ${problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                  }`}
               >
                 <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#6F7883] font-semibold block">
                   THE PROBLEM
@@ -343,8 +362,11 @@ export default function LandingPage() {
 
               {/* Right Column: Arch Window Duomo Collage Bleeding Flush to Right Edge */}
               <div
-                className={`lg:col-span-7 relative flex justify-end pr-0 mt-8 lg:mt-0 transition-all duration-700 ease-out ${
-                  problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+                ref={problemArtworkReveal.ref}
+                className={`lg:col-span-7 relative flex justify-end pr-0 mt-8 lg:mt-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+                  problemArtworkReveal.isVisible
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-24 sm:translate-x-36 lg:translate-x-48'
                 }`}
               >
                 {/* Handwritten Note with underline stroke */}
@@ -357,7 +379,7 @@ export default function LandingPage() {
                 {/* Arch Window Duomo Artwork */}
                 <div className="relative w-full max-w-[780px] xl:max-w-[860px] ml-auto mr-0 select-none">
                   <Image
-                    src="/assets/landing/problem-arch-duomo.webp"
+                    src="/assets/landing/ballast-problem.png"
                     alt="Tuscan arch window framing Florence Duomo with lantern and torn textures"
                     width={576}
                     height={498}
@@ -392,7 +414,7 @@ export default function LandingPage() {
           </div>
 
           <div className="w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0 relative z-10">
-            
+
             {/* Top Row: Heading on Left, Pointing Arm Entering From Right Edge */}
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-16 sm:mb-20">
               <div>
@@ -410,8 +432,11 @@ export default function LandingPage() {
 
               {/* Pointing Arm Artwork with Handwritten Note */}
               <div
-                className={`relative flex items-center gap-4 self-end lg:self-auto mr-0 transition-all duration-1000 ease-out ${
-                  stepsReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'
+                ref={pointingArmReveal.ref}
+                className={`relative flex items-center gap-4 self-end lg:self-auto mr-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+                  pointingArmReveal.isVisible
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-36 sm:translate-x-52 lg:translate-x-72'
                 }`}
               >
                 {/* Handwritten Tag pointing right */}
@@ -437,7 +462,7 @@ export default function LandingPage() {
 
             {/* Three Step Columns with Serif Numerals, Underlined Titles, Hairline Dividers */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0 pt-4 pr-6 sm:pr-10 lg:pr-16 xl:pr-20">
-              
+
               {/* Step 01 */}
               <div className="space-y-3.5 md:pr-10 lg:pr-14">
                 <span className="font-serif text-4xl sm:text-5xl font-bold text-[#0A1521] block">01</span>
@@ -486,314 +511,293 @@ export default function LandingPage() {
 
 
         {/* ========================================================= */}
-        {/* SECTION 4: INTERACTIVE SIMULATOR (INSET DEEP RUST PANEL)   */}
+        {/* SECTION 4: INTERACTIVE SIMULATOR                          */}
         {/* ========================================================= */}
         <section
           id="simulator"
           ref={simulatorReveal.ref}
-          className="py-12 sm:py-16 md:py-20"
+          className="relative py-20 sm:py-24 md:py-32 overflow-hidden bg-cover bg-left-bottom bg-no-repeat text-white"
+          style={{ backgroundImage: "url('/assets/landing/simulator-colosseum.webp')" }}
         >
-          <div className="w-full max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
-            
-            {/* Inset Deep Rust Panel with Torn-Paper Top & Bottom Edges */}
-            <div className="relative bg-[#C1411C] text-white rounded-3xl torn-edge-y overflow-hidden py-16 sm:py-20 lg:py-24 px-6 sm:px-10 lg:px-14 shadow-2xl">
-              
-              {/* Background Colosseum Artwork Bottom Left */}
-              <div className="absolute -bottom-8 -left-8 w-[480px] sm:w-[600px] lg:w-[680px] pointer-events-none select-none z-0 opacity-80 mix-blend-screen">
-                <Image
-                  src="/assets/landing/simulator-colosseum.webp"
-                  alt=""
-                  width={1024}
-                  height={576}
-                  className="w-full h-auto object-contain"
-                  aria-hidden="true"
-                />
+          <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+
+              {/* Left Column: Heading, Narrative, and CTA button */}
+              <div
+                className={`lg:col-span-5 space-y-6 transition-all duration-700 ease-out ${simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
+              >
+                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-white/80 font-semibold block">
+                  INTERACTIVE SIMULATOR
+                </span>
+
+                <h2 className="text-5xl sm:text-6xl lg:text-[70px] font-serif font-normal leading-[1.0] tracking-tight text-white">
+                  Model<br />the unexpected.
+                </h2>
+
+                <p className="text-base sm:text-lg font-sans text-white/90 leading-relaxed max-w-md">
+                  Adjust variables, simulate market moves, and see how they impact your position in real time.
+                </p>
+
+                <div className="pt-2">
+                  <Link href="/app/stress-test">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C1411C] transition-all duration-200 shadow-md">
+                      <span>Try the simulator</span>
+                      <ArrowRight className="w-4 h-4 stroke-[2.2]" />
+                    </button>
+                  </Link>
+                </div>
               </div>
 
-              <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-                
-                {/* Left Column: Heading, Narrative, and CTA button */}
-                <div
-                  className={`lg:col-span-5 space-y-6 transition-all duration-700 ease-out ${
-                    simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              {/* Right Column: Wide Interactive Position Simulator Card */}
+              <div
+                className={`lg:col-span-7 flex justify-end transition-all duration-700 ease-out ${simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                   }`}
-                >
-                  <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-white/80 font-semibold block">
-                    INTERACTIVE SIMULATOR
-                  </span>
+              >
+                <div className="bg-white text-[#0A1521] rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] w-full max-w-[740px] xl:max-w-[800px]">
 
-                  <h2 className="text-5xl sm:text-6xl lg:text-[70px] font-serif font-normal leading-[1.0] tracking-tight text-white">
-                    Model<br />the unexpected.
-                  </h2>
+                  {/* Card Header & Timeframe Tabs */}
+                  <div className="flex flex-row items-center justify-between gap-3 pb-6 border-b border-[#0A1521]/10">
+                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#0A1521]">
+                      Position Simulator
+                    </h3>
 
-                  <p className="text-base sm:text-lg font-sans text-white/90 leading-relaxed max-w-md">
-                    Adjust variables, simulate market moves, and see how they impact your position in real time.
-                  </p>
-
-                  <div className="pt-2">
-                    <Link href="/app/stress-test">
-                      <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C1411C] transition-all duration-200 shadow-md">
-                        <span>Try the simulator</span>
-                        <ArrowRight className="w-4 h-4 stroke-[2.2]" />
-                      </button>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Right Column: Wide Interactive Position Simulator Card */}
-                <div
-                  className={`lg:col-span-7 flex justify-end transition-all duration-700 ease-out ${
-                    simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                  }`}
-                >
-                  <div className="bg-white text-[#0A1521] rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] w-full max-w-[740px] xl:max-w-[800px]">
-                    
-                    {/* Card Header & Timeframe Tabs */}
-                    <div className="flex flex-row items-center justify-between gap-3 pb-6 border-b border-[#0A1521]/10">
-                      <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#0A1521]">
-                        Position Simulator
-                      </h3>
-
-                      {/* Timeframe selector pill */}
-                      <div className="flex items-center rounded-full bg-[#F7EFE4] p-1 text-xs font-mono">
-                        {(['1D', '1W', '1M', '1Y'] as const).map((t) => (
-                          <button
-                            key={t}
-                            onClick={() => setTimeframe(t)}
-                            className={`px-3 py-1 rounded-full text-xs transition-all duration-150 ${
-                              timeframe === t
-                                ? 'bg-[#0A1521] text-white font-bold shadow-sm'
-                                : 'text-[#6F7883] hover:text-[#0A1521]'
+                    {/* Timeframe selector pill */}
+                    <div className="flex items-center rounded-full bg-[#F7EFE4] p-1 text-xs font-mono">
+                      {(['1D', '1W', '1M', '1Y'] as const).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setTimeframe(t)}
+                          className={`px-3 py-1 rounded-full text-xs transition-all duration-150 ${timeframe === t
+                            ? 'bg-[#0A1521] text-white font-bold shadow-sm'
+                            : 'text-[#6F7883] hover:text-[#0A1521]'
                             }`}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Top 3 Live Calculated Metric Tiles */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 py-6 border-b border-[#0A1521]/10">
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                        <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                          Collateral ratio
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          <span className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] tracking-tight">
-                            {icrFormatted}%
-                          </span>
-                          <span
-                            className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ${
-                              healthState === 'healthy'
-                                ? 'bg-[#BCD99F] text-[#2D6A2E]'
-                                : healthState === 'caution'
-                                ? 'bg-[#F5AF61]/30 text-[#B7791F]'
-                                : 'bg-[#E16839]/20 text-[#E16839]'
-                            }`}
-                          >
-                            {healthLabel}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                        <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                          MUSD debt
-                        </span>
-                        <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
-                          ${debt.toLocaleString()}
-                        </div>
-                      </div>
-
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                        <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                          Collateral value
-                        </span>
-                        <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
-                          ${collateralValue.toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Interactive SVG Chart matching 100/200/300% axis */}
-                    <div className="py-6">
-                      <div className="relative h-44 sm:h-48 w-full">
-                        <svg
-                          viewBox="0 0 600 180"
-                          className="w-full h-full overflow-visible"
-                          preserveAspectRatio="none"
                         >
-                          <defs>
-                            <linearGradient id="simAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#CA461E" stopOpacity="0.25" />
-                              <stop offset="100%" stopColor="#CA461E" stopOpacity="0.0" />
-                            </linearGradient>
-                          </defs>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                          {/* Reference lines matching 100/200/300% */}
-                          <line x1="0" y1="140" x2="600" y2="140" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                          <text x="5" y="136" fill="#8C877D" fontSize="10" fontFamily="monospace">100%</text>
-
-                          <line x1="0" y1="80" x2="600" y2="80" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                          <text x="5" y="76" fill="#8C877D" fontSize="10" fontFamily="monospace">200%</text>
-
-                          <line x1="0" y1="20" x2="600" y2="20" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                          <text x="5" y="16" fill="#8C877D" fontSize="10" fontFamily="monospace">300%</text>
-
-                          {/* Vertical Indicator Line */}
-                          {chartSvgPath.points[activeChartPoint] && (
-                            <line
-                              x1={chartSvgPath.points[activeChartPoint].x}
-                              y1={chartSvgPath.points[activeChartPoint].y}
-                              x2={chartSvgPath.points[activeChartPoint].x}
-                              y2="170"
-                              stroke="#0A1521"
-                              strokeWidth="1.5"
-                              strokeDasharray="2 2"
-                              opacity="0.6"
-                            />
-                          )}
-
-                          {/* Soft Ember Area Fill */}
-                          <path d={chartSvgPath.areaPath} fill="url(#simAreaGradient)" />
-
-                          {/* Smooth Curve Line */}
-                          <path
-                            d={chartSvgPath.linePath}
-                            fill="none"
-                            stroke="#CA461E"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                          />
-
-                          {/* Interactive Data Points */}
-                          {chartSvgPath.points.map((pt, i) => (
-                            <g
-                              key={i}
-                              className="cursor-pointer"
-                              onClick={() => setActiveChartPoint(i)}
-                            >
-                              <circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={activeChartPoint === i ? 5.5 : 4}
-                                fill={activeChartPoint === i ? '#0A1521' : '#CA461E'}
-                                stroke="white"
-                                strokeWidth={activeChartPoint === i ? 2 : 1.5}
-                              />
-                            </g>
-                          ))}
-                        </svg>
-
-                        {/* Tooltip on Active Point */}
-                        {chartSvgPath.points[activeChartPoint] && (
-                          <div
-                            className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-full -top-1 px-3 py-1.5 bg-white text-[#0A1521] border border-[#0A1521]/10 rounded-xl text-xs font-mono shadow-xl text-center"
-                            style={{
-                              left: `${(activeChartPoint / (chartPoints.length - 1)) * 100}%`,
-                            }}
-                          >
-                            <div className="font-bold text-sm text-[#0A1521]">
-                              {chartPoints[activeChartPoint].value.toFixed(1)}%
-                            </div>
-                            <div className="text-[10px] text-[#6F7883]">
-                              {chartPoints[activeChartPoint].date}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Month Labels */}
-                      <div className="flex justify-between text-xs font-mono text-[#6F7883] pt-3 border-t border-[#0A1521]/10">
-                        {chartPoints.map((pt, i) => (
-                          <span key={i}>{pt.label}</span>
-                        ))}
+                  {/* Top 3 Live Calculated Metric Tiles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 py-6 border-b border-[#0A1521]/10">
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
+                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
+                        Collateral ratio
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        <span className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] tracking-tight">
+                          {icrFormatted}%
+                        </span>
+                        <span
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ${healthState === 'healthy'
+                            ? 'bg-[#BCD99F] text-[#2D6A2E]'
+                            : healthState === 'caution'
+                              ? 'bg-[#F5AF61]/30 text-[#B7791F]'
+                              : 'bg-[#E16839]/20 text-[#E16839]'
+                            }`}
+                        >
+                          {healthLabel}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Three Slider Tiles */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4 border-t border-[#0A1521]/10">
-                      
-                      {/* Slider 1: MUSD Price */}
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-[#6F7883]">MUSD Price</span>
-                          <span className="font-bold text-[#0A1521]">${musdPrice.toFixed(2)}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0.50"
-                          max="2.00"
-                          step="0.01"
-                          value={musdPrice}
-                          onChange={(e) => setMusdPrice(parseFloat(e.target.value))}
-                          style={{
-                            background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) 100%)`,
-                          }}
-                          className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
-                        />
-                        <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
-                          <span>$0.50</span>
-                          <span>$2.00</span>
-                        </div>
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
+                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
+                        MUSD debt
+                      </span>
+                      <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
+                        ${debt.toLocaleString()}
                       </div>
+                    </div>
 
-                      {/* Slider 2: Collateral Value */}
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-[#6F7883]">Collateral Value</span>
-                          <span className="font-bold text-[#0A1521]">${collateralValue.toLocaleString()}</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="1000"
-                          max="50000"
-                          step="500"
-                          value={collateralValue}
-                          onChange={(e) => setCollateralValue(parseInt(e.target.value, 10))}
-                          style={{
-                            background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) 100%)`,
-                          }}
-                          className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
-                        />
-                        <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
-                          <span>$1k</span>
-                          <span>$50k</span>
-                        </div>
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
+                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
+                        Collateral value
+                      </span>
+                      <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
+                        ${collateralValue.toLocaleString()}
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Slider 3: Volatility */}
-                      <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-[#6F7883]">Volatility</span>
-                          <span className="font-bold text-[#0A1521]">± {volatilityPercent}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="5"
-                          value={volatilityPercent}
-                          onChange={(e) => setVolatilityPercent(parseInt(e.target.value, 10))}
-                          style={{
-                            background: `linear-gradient(to right, #CA461E 0%, #CA461E ${volatilityPercent}%, rgba(10,21,33,0.12) ${volatilityPercent}%, rgba(10,21,33,0.12) 100%)`,
-                          }}
-                          className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                  {/* Interactive SVG Chart matching 100/200/300% axis */}
+                  <div className="py-6">
+                    <div className="relative h-44 sm:h-48 w-full">
+                      <svg
+                        viewBox="0 0 600 180"
+                        className="w-full h-full overflow-visible"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <linearGradient id="simAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#CA461E" stopOpacity="0.25" />
+                            <stop offset="100%" stopColor="#CA461E" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Reference lines matching 100/200/300% */}
+                        <line x1="0" y1="140" x2="600" y2="140" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
+                        <text x="5" y="136" fill="#8C877D" fontSize="10" fontFamily="monospace">100%</text>
+
+                        <line x1="0" y1="80" x2="600" y2="80" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
+                        <text x="5" y="76" fill="#8C877D" fontSize="10" fontFamily="monospace">200%</text>
+
+                        <line x1="0" y1="20" x2="600" y2="20" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
+                        <text x="5" y="16" fill="#8C877D" fontSize="10" fontFamily="monospace">300%</text>
+
+                        {/* Vertical Indicator Line */}
+                        {chartSvgPath.points[activeChartPoint] && (
+                          <line
+                            x1={chartSvgPath.points[activeChartPoint].x}
+                            y1={chartSvgPath.points[activeChartPoint].y}
+                            x2={chartSvgPath.points[activeChartPoint].x}
+                            y2="170"
+                            stroke="#0A1521"
+                            strokeWidth="1.5"
+                            strokeDasharray="2 2"
+                            opacity="0.6"
+                          />
+                        )}
+
+                        {/* Soft Ember Area Fill */}
+                        <path d={chartSvgPath.areaPath} fill="url(#simAreaGradient)" />
+
+                        {/* Smooth Curve Line */}
+                        <path
+                          d={chartSvgPath.linePath}
+                          fill="none"
+                          stroke="#CA461E"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
                         />
-                        <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
-                          <span>0%</span>
-                          <span>100%</span>
-                        </div>
-                      </div>
 
+                        {/* Interactive Data Points */}
+                        {chartSvgPath.points.map((pt, i) => (
+                          <g
+                            key={i}
+                            className="cursor-pointer"
+                            onClick={() => setActiveChartPoint(i)}
+                          >
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={activeChartPoint === i ? 5.5 : 4}
+                              fill={activeChartPoint === i ? '#0A1521' : '#CA461E'}
+                              stroke="white"
+                              strokeWidth={activeChartPoint === i ? 2 : 1.5}
+                            />
+                          </g>
+                        ))}
+                      </svg>
+
+                      {/* Tooltip on Active Point */}
+                      {chartSvgPath.points[activeChartPoint] && (
+                        <div
+                          className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-full -top-1 px-3 py-1.5 bg-white text-[#0A1521] border border-[#0A1521]/10 rounded-xl text-xs font-mono shadow-xl text-center"
+                          style={{
+                            left: `${(activeChartPoint / (chartPoints.length - 1)) * 100}%`,
+                          }}
+                        >
+                          <div className="font-bold text-sm text-[#0A1521]">
+                            {chartPoints[activeChartPoint].value.toFixed(1)}%
+                          </div>
+                          <div className="text-[10px] text-[#6F7883]">
+                            {chartPoints[activeChartPoint].date}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Month Labels */}
+                    <div className="flex justify-between text-xs font-mono text-[#6F7883] pt-3 border-t border-[#0A1521]/10">
+                      {chartPoints.map((pt, i) => (
+                        <span key={i}>{pt.label}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Three Slider Tiles */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4 border-t border-[#0A1521]/10">
+
+                    {/* Slider 1: MUSD Price */}
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#6F7883]">MUSD Price</span>
+                        <span className="font-bold text-[#0A1521]">${musdPrice.toFixed(2)}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.50"
+                        max="2.00"
+                        step="0.01"
+                        value={musdPrice}
+                        onChange={(e) => setMusdPrice(parseFloat(e.target.value))}
+                        style={{
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) 100%)`,
+                        }}
+                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
+                        <span>$0.50</span>
+                        <span>$2.00</span>
+                      </div>
+                    </div>
+
+                    {/* Slider 2: Collateral Value */}
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#6F7883]">Collateral Value</span>
+                        <span className="font-bold text-[#0A1521]">${collateralValue.toLocaleString()}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1000"
+                        max="50000"
+                        step="500"
+                        value={collateralValue}
+                        onChange={(e) => setCollateralValue(parseInt(e.target.value, 10))}
+                        style={{
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) 100%)`,
+                        }}
+                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
+                        <span>$1k</span>
+                        <span>$50k</span>
+                      </div>
+                    </div>
+
+                    {/* Slider 3: Volatility */}
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#6F7883]">Volatility</span>
+                        <span className="font-bold text-[#0A1521]">± {volatilityPercent}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={volatilityPercent}
+                        onChange={(e) => setVolatilityPercent(parseInt(e.target.value, 10))}
+                        style={{
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${volatilityPercent}%, rgba(10,21,33,0.12) ${volatilityPercent}%, rgba(10,21,33,0.12) 100%)`,
+                        }}
+                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
+                        <span>0%</span>
+                        <span>100%</span>
+                      </div>
                     </div>
 
                   </div>
+
                 </div>
-
               </div>
-            </div>
 
+            </div>
           </div>
         </section>
 
@@ -804,94 +808,87 @@ export default function LandingPage() {
         <section
           id="belief"
           ref={beliefReveal.ref}
-          className="relative py-20 sm:py-24 md:py-32 overflow-hidden"
+          className="relative py-12 sm:py-14 md:py-16 overflow-hidden bg-cover bg-right-top bg-no-repeat"
+          style={{ backgroundImage: "url('/assets/landing/belief-facade.webp')", backgroundPosition: 'right top' }}
         >
-          <div className="w-full flex flex-col lg:flex-row items-center justify-between">
-            
-            {/* Left Part: David Statue with Orange Bleeding Straight to Left Screen Edge */}
-            <div
-              className={`w-full lg:w-[540px] xl:w-[620px] shrink-0 relative flex justify-center lg:justify-start pl-0 transition-all duration-700 ease-out ${
-                beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-              }`}
-            >
-              {/* Handwritten Tag top left */}
-              <div className="absolute -top-12 left-4 sm:left-12 lg:left-16 z-20">
-                <Handwritten arrow="curved-down-left" rotation="-rotate-3">
-                  YOUR POSITION.{'\n'}YOUR RULES.
-                </Handwritten>
-              </div>
-
-              {/* Large David Statue Cutout with Orange Bleeding Left */}
-              <div className="relative w-full max-w-[380px] sm:max-w-[460px] lg:max-w-[560px] xl:max-w-[620px] select-none -ml-0 lg:-ml-12">
-                <Image
-                  src="/assets/landing/belief-david.webp"
-                  alt=""
-                  width={1024}
-                  height={682}
-                  className="w-full h-auto object-contain filter drop-shadow-sm select-none"
-                  aria-hidden="true"
-                />
-              </div>
+          {/* David Statue Cutout Anchored Directly to the Bottom-Left Border of Section */}
+          <div
+            ref={beliefDavidReveal.ref}
+            className={`absolute -bottom-5 sm:-bottom-6 lg:-bottom-8 left-0 z-10 w-full max-w-[380px] sm:max-w-[440px] lg:max-w-[500px] xl:max-w-[540px] shrink-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform select-none pointer-events-none ${
+              beliefDavidReveal.isVisible
+                ? 'opacity-100 translate-x-0'
+                : 'opacity-0 -translate-x-32 sm:-translate-x-44 lg:-translate-x-56'
+            }`}
+          >
+            {/* Handwritten Tag top left */}
+            <div className="absolute -top-10 left-6 sm:left-12 lg:left-14 z-20">
+              <Handwritten arrow="curved-down-left" rotation="-rotate-3">
+                YOUR POSITION.{'\n'}YOUR RULES.
+              </Handwritten>
             </div>
+
+            {/* Large David Statue Cutout starting flush from bottom left border */}
+            <div className="relative w-full -ml-0 lg:-ml-6 xl:-ml-8">
+              <Image
+                src="/assets/landing/belief-david.png"
+                alt=""
+                width={1024}
+                height={682}
+                className="w-full h-auto object-contain object-bottom filter drop-shadow-sm select-none"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+
+          <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10 flex flex-col lg:flex-row items-center justify-between min-h-[440px] lg:min-h-[480px]">
+
+            {/* Left spacer for desktop so middle text is centered between David and Building Facade */}
+            <div className="hidden lg:block w-[320px] xl:w-[400px] shrink-0 pointer-events-none" />
 
             {/* Middle Part: Our Belief Narrative & Centered CTA Buttons */}
             <div
-              className={`max-w-xl px-6 sm:px-10 lg:px-6 my-10 lg:my-0 space-y-6 text-center transition-all duration-700 ease-out ${
-                beliefReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-              }`}
+              className={`max-w-xl px-4 sm:px-6 my-6 lg:my-0 space-y-4 sm:space-y-5 text-center transition-all duration-700 ease-out ${beliefReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
             >
               <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#6F7883] font-semibold block">
                 OUR BELIEF
               </span>
 
-              <h2 className="text-4xl sm:text-5xl lg:text-[56px] font-serif font-normal text-[#0A1521] leading-[1.04] tracking-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-[46px] font-serif font-normal text-[#0A1521] leading-[1.08] tracking-tight">
                 Better tools<br />
                 for a more stable<br />
                 ecosystem.
               </h2>
 
-              <p className="text-base sm:text-lg font-sans text-[#2C3642] leading-relaxed max-w-lg mx-auto">
+              <p className="text-sm sm:text-base font-sans text-[#2C3642] leading-relaxed max-w-md mx-auto">
                 A more informed community leads to fewer liquidations, healthier positions, and a
                 more resilient MUSD ecosystem.
               </p>
 
               {/* CTAs Centered */}
-              <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
                 <Link href="/app/overview">
-                  <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm">
+                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm">
                     <span>Explore Ballast</span>
                     <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                   </button>
                 </Link>
                 <Link href="/whitepaper">
-                  <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
+                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
                     <span>Read the docs</span>
                   </button>
                 </Link>
               </div>
             </div>
 
-            {/* Right Part: Italian Building Facade Bleeding Straight to Right Edge */}
+            {/* Right Part: Angled Handwritten Stamp Tag positioned at bottom right */}
             <div
-              className={`w-full lg:w-[440px] xl:w-[500px] shrink-0 relative flex justify-center lg:justify-end pr-0 transition-all duration-700 ease-out ${
-                beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-              }`}
+              className={`w-full lg:w-[280px] xl:w-[340px] shrink-0 relative flex justify-center lg:justify-end pr-0 self-end transition-all duration-700 ease-out ${beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+                }`}
             >
-              <div className="relative w-full max-w-[340px] sm:max-w-[400px] lg:max-w-[460px] xl:max-w-[500px] select-none [mask-image:linear-gradient(to_right,transparent_0%,black_15%,black_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_15%,black_100%)]">
-                <Image
-                  src="/assets/landing/belief-facade.webp"
-                  alt=""
-                  width={1024}
-                  height={576}
-                  className="w-full h-auto object-cover rounded-sm filter drop-shadow-sm select-none"
-                  aria-hidden="true"
-                />
-
-                {/* Angled Handwritten Stamp Tag */}
-                <div className="absolute -bottom-6 left-2 sm:left-4 z-10">
-                  <div className="inline-block px-4 py-2 border border-dashed border-[#CA461E] bg-[#F7EFE4]/95 backdrop-blur-sm rounded-sm font-hand text-sm sm:text-base font-bold text-[#CA461E] rotate-6 select-none shadow-sm leading-tight text-center">
-                    BUILT FOR<br />A MORE STABLE<br />ECOSYSTEM
-                  </div>
+              <div className="pb-3 sm:pb-4">
+                <div className="inline-block px-3.5 py-1.5 border border-dashed border-[#CA461E] bg-[#F7EFE4]/95 backdrop-blur-sm rounded-sm font-hand text-xs sm:text-sm font-bold text-[#CA461E] rotate-6 select-none shadow-sm leading-tight text-center">
+                  BUILT FOR<br />A MORE STABLE<br />ECOSYSTEM
                 </div>
               </div>
             </div>
@@ -906,7 +903,7 @@ export default function LandingPage() {
       <footer className="border-t border-[#0A1521]/10 bg-[#EFE6D9] text-[#0A1521]">
         <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 py-16 sm:py-20">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12 items-start pb-14 border-b border-[#0A1521]/10">
-            
+
             {/* Identity & Mission */}
             <div className="md:col-span-4 space-y-4">
               <Link href="/" className="flex items-center gap-2.5 group">
@@ -959,7 +956,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
                 <li>
                   <Link href="/whitepaper" className="hover:text-[#0A1521] transition-colors">
-                    Docs
+                    Whitepaper
                   </Link>
                 </li>
                 <li>

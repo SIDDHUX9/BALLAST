@@ -31,7 +31,7 @@ export function Header({ walletSlot }: HeaderProps) {
   const landingNavItems = [
     { href: '#how-it-works', label: 'Protocol' },
     { href: '#simulator', label: 'Risk' },
-    { href: '/whitepaper', label: 'Docs' },
+    { href: '/whitepaper', label: 'Whitepaper' },
     { href: '#belief', label: 'About' },
   ];
 
@@ -64,30 +64,29 @@ export function Header({ walletSlot }: HeaderProps) {
         <nav className="hidden md:flex items-center gap-7 text-sm font-sans font-medium">
           {isApp
             ? appNavItems.map((item) => {
-                const active = pathname === item.href || (item.href === '/app/overview' && pathname === '/app');
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`transition-colors pb-1 text-xs font-mono uppercase tracking-wider border-b-2 ${
-                      active
-                        ? 'border-ember text-ink font-semibold'
-                        : 'border-transparent text-ink-muted hover:text-ink'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })
-            : landingNavItems.map((item) => (
-                <a
+              const active = pathname === item.href || (item.href === '/app/overview' && pathname === '/app');
+              return (
+                <Link
                   key={item.href}
                   href={item.href}
-                  className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
+                  className={`transition-colors pb-1 text-xs font-mono uppercase tracking-wider border-b-2 ${active
+                      ? 'border-ember text-ink font-semibold'
+                      : 'border-transparent text-ink-muted hover:text-ink'
+                    }`}
                 >
                   {item.label}
-                </a>
-              ))}
+                </Link>
+              );
+            })
+            : landingNavItems.map((item) => (
+              <a
+                key={item.href}
+                href={item.href}
+                className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
+              >
+                {item.label}
+              </a>
+            ))}
         </nav>
 
         {/* Action Controls & Wallet Slot */}
