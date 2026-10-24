@@ -38,7 +38,7 @@ export function Header({ walletSlot }: HeaderProps) {
 
   return (
     <header className={`border-b border-[#E8E2D5]/60 ${isApp ? 'bg-paper/95' : 'bg-[#F5F1E8]/95'} backdrop-blur-sm sticky top-0 z-40 transition-colors`}>
-      <div className="max-w-[1180px] mx-auto px-5 sm:px-8 lg:px-12 h-20 flex items-center justify-between gap-4">
+      <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 h-20 flex items-center justify-between gap-4">
         {/* Brand Wordmark */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group focus-visible:outline-none">
