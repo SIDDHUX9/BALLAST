@@ -37,33 +37,20 @@ export function Header({ walletSlot }: HeaderProps) {
   ];
 
   return (
-    <header
-      className={`sticky top-0 z-40 transition-colors ${
-        isApp
-          ? 'border-b border-hairline bg-paper/95'
-          : 'bg-[#F5F1E8]/90 backdrop-blur-md text-[#14130F]'
-      }`}
-    >
-      <div className="max-w-container mx-auto px-4 md:px-8 h-18 flex items-center justify-between gap-4">
+    <header className={`border-b border-[#E8E2D5]/60 ${isApp ? 'bg-paper/95' : 'bg-[#F5F1E8]/95'} backdrop-blur-sm sticky top-0 z-40 transition-colors`}>
+      <div className="max-w-[1180px] mx-auto px-5 sm:px-8 lg:px-12 h-20 flex items-center justify-between gap-4">
         {/* Brand Wordmark */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group focus-visible:outline-none">
-            <span className="w-8 h-8 rounded-sm bg-[#14130F] text-white flex items-center justify-center border border-[#14130F] group-hover:bg-[#C84E29] transition-colors">
-              <Anchor className="w-4 h-4 stroke-[1.5]" />
+            <span className="text-[#14130F] group-hover:text-[#C84E29] transition-colors">
+              <Anchor className="w-5 h-5 stroke-[2.4]" />
             </span>
-            <div className="flex flex-col">
-              <span className="font-serif font-bold text-lg text-[#14130F] dark:text-inherit tracking-tight leading-none group-hover:text-[#C84E29] transition-colors">
-                {BRAND_NAME}
-              </span>
-              {isApp && (
-                <span className="text-[10px] font-mono text-ink-muted uppercase tracking-wider hidden sm:inline">
-                  {BRAND_TAGLINE}
-                </span>
-              )}
-            </div>
+            <span className="font-serif font-black text-xl text-[#14130F] tracking-wider uppercase leading-none group-hover:text-[#C84E29] transition-colors">
+              {BRAND_NAME}
+            </span>
           </Link>
 
-          {/* Network Chip - Only in App */}
+          {/* Network Chip (App only) */}
           {isApp && (
             <div className="hidden lg:flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-hairline bg-paper-surface text-[11px] font-mono text-ink-muted">
               <span className="w-1.5 h-1.5 rounded-full bg-safe shrink-0 animate-pulse" />
@@ -75,7 +62,7 @@ export function Header({ walletSlot }: HeaderProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-sans">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-sans font-medium">
           {isApp
             ? appNavItems.map((item) => {
                 const active = pathname === item.href || (item.href === '/app/overview' && pathname === '/app');
@@ -83,7 +70,7 @@ export function Header({ walletSlot }: HeaderProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`transition-colors pb-1 border-b-2 text-xs font-mono uppercase tracking-wider ${
+                    className={`transition-colors pb-1 text-xs font-mono uppercase tracking-wider border-b-2 ${
                       active
                         ? 'border-ember text-ink font-semibold'
                         : 'border-transparent text-ink-muted hover:text-ink'
@@ -97,7 +84,7 @@ export function Header({ walletSlot }: HeaderProps) {
                 <a
                   key={item.href}
                   href={item.href}
-                  className="text-[#68635B] hover:text-[#14130F] transition-colors font-medium"
+                  className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
                 >
                   {item.label}
                 </a>
@@ -106,19 +93,21 @@ export function Header({ walletSlot }: HeaderProps) {
 
         {/* Action Controls & Wallet Slot */}
         <div className="flex items-center gap-3">
-          {/* Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            className="w-8 h-8 rounded-full border border-hairline bg-paper-surface flex items-center justify-center text-ink-muted hover:text-ink hover:border-hairline-strong transition-colors focus-visible:outline-none"
-          >
-            {theme === 'light' ? (
-              <Moon className="w-3.5 h-3.5 stroke-[1.5]" />
-            ) : (
-              <Sun className="w-3.5 h-3.5 stroke-[1.5]" />
-            )}
-          </button>
+          {/* Theme Toggle Button (App only) */}
+          {isApp && (
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+              className="w-8 h-8 rounded-full border border-hairline bg-paper-surface flex items-center justify-center text-ink-muted hover:text-ink hover:border-hairline-strong transition-colors focus-visible:outline-none"
+            >
+              {theme === 'light' ? (
+                <Moon className="w-3.5 h-3.5 stroke-[1.5]" />
+              ) : (
+                <Sun className="w-3.5 h-3.5 stroke-[1.5]" />
+              )}
+            </button>
+          )}
 
           {/* App Entry or Wallet Slot */}
           {walletSlot ? (
@@ -130,9 +119,9 @@ export function Header({ walletSlot }: HeaderProps) {
             </>
           ) : (
             <Link href="/app/overview">
-              <button className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#14130F] dark:bg-white text-white dark:text-[#14130F] font-sans font-medium text-xs hover:bg-[#C84E29] dark:hover:bg-[#C84E29] dark:hover:text-white transition-all duration-200 shadow-sm hover:shadow">
+              <button className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-xs hover:bg-[#C84E29] transition-all duration-200 shadow-sm hover:shadow">
                 <span>Launch App</span>
-                <span className="text-[11px] font-mono">↗</span>
+                <span className="text-xs font-mono">↗</span>
               </button>
             </Link>
           )}
