@@ -3,24 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --bg-paper: #F4F1EA;
-  --bg-paper-raised: #FBFAF6;
+  --bg-paper: #F7EFE4;
+  --bg-paper-raised: #FBF7F0;
   --bg-surface: #FFFFFF;
-  --text-ink: #14130F;
-  --text-ink-soft: #3A3830;
-  --text-muted: #6B675C;
-  --border-hairline: rgba(20, 19, 15, 0.14);
-  --border-strong: rgba(20, 19, 15, 0.28);
+  --text-ink: #0A1521;
+  --text-ink-soft: #2C3642;
+  --text-muted: #6F7883;
+  --border-hairline: rgba(10, 21, 33, 0.12);
+  --border-strong: rgba(10, 21, 33, 0.24);
   
-  --color-safe: #2F6F5E;
-  --color-safe-bg: rgba(47, 111, 94, 0.09);
-  --color-watch: #B7791F;
-  --color-watch-bg: rgba(183, 121, 31, 0.09);
-  --color-danger: #A32020;
-  --color-danger-bg: rgba(163, 32, 32, 0.09);
-  --color-ember: #B8431F;
-  --color-ember-soft: rgba(184, 67, 31, 0.09);
-  --shadow-color: rgba(20, 19, 15, 0.08);
+  --color-safe: #2D6A2E;
+  --color-safe-bg: #BCD99F;
+  --color-watch: #F5AF61;
+  --color-watch-bg: rgba(245, 175, 97, 0.15);
+  --color-danger: #E16839;
+  --color-danger-bg: rgba(225, 104, 57, 0.15);
+  --color-ember: #CA461E;
+  --color-ember-soft: rgba(202, 70, 30, 0.12);
+  --color-rust: #C1411C;
+  --shadow-color: rgba(10, 21, 33, 0.08);
 }
 
 .dark {
@@ -41,6 +42,7 @@
   --color-danger-bg: rgba(224, 74, 74, 0.14);
   --color-ember: #D95C34;
   --color-ember-soft: rgba(217, 92, 52, 0.14);
+  --color-rust: #B83E1B;
   --shadow-color: rgba(0, 0, 0, 0.6);
 }
 
@@ -80,6 +82,52 @@
   border-color: var(--border-hairline);
 }
 
+/* Paper Subtle Grain Overlay */
+.paper-texture {
+  background-color: #F7EFE4 !important;
+  color: #0A1521 !important;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* Organic Torn Paper Edge Deckle Clip Paths */
+.torn-edge-top {
+  clip-path: polygon(
+    0% 0%, 2% 7px, 5% 2px, 8% 10px, 12% 3px, 15% 9px, 19% 2px, 23% 11px,
+    27% 4px, 32% 8px, 36% 2px, 41% 10px, 45% 3px, 50% 11px, 55% 2px, 60% 10px,
+    65% 4px, 70% 9px, 75% 2px, 80% 11px, 85% 3px, 90% 9px, 94% 2px, 98% 8px, 100% 0%,
+    100% 100%, 0% 100%
+  );
+}
+
+.torn-edge-bottom {
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 100%,
+    98% calc(100% - 7px), 94% calc(100% - 2px), 90% calc(100% - 10px),
+    85% calc(100% - 3px), 80% calc(100% - 9px), 75% calc(100% - 2px),
+    70% calc(100% - 11px), 65% calc(100% - 3px), 60% calc(100% - 8px),
+    55% calc(100% - 2px), 50% calc(100% - 10px), 45% calc(100% - 3px),
+    40% calc(100% - 11px), 35% calc(100% - 2px), 30% calc(100% - 9px),
+    25% calc(100% - 3px), 20% calc(100% - 10px), 15% calc(100% - 2px),
+    10% calc(100% - 11px), 5% calc(100% - 3px), 0% 100%
+  );
+}
+
+.torn-edge-y {
+  clip-path: polygon(
+    0% 0%, 2% 7px, 5% 2px, 8% 10px, 12% 3px, 15% 9px, 19% 2px, 23% 11px,
+    27% 4px, 32% 8px, 36% 2px, 41% 10px, 45% 3px, 50% 11px, 55% 2px, 60% 10px,
+    65% 4px, 70% 9px, 75% 2px, 80% 11px, 85% 3px, 90% 9px, 94% 2px, 98% 8px, 100% 0%,
+    100% 100%,
+    98% calc(100% - 7px), 94% calc(100% - 2px), 90% calc(100% - 10px),
+    85% calc(100% - 3px), 80% calc(100% - 9px), 75% calc(100% - 2px),
+    70% calc(100% - 11px), 65% calc(100% - 3px), 60% calc(100% - 8px),
+    55% calc(100% - 2px), 50% calc(100% - 10px), 45% calc(100% - 3px),
+    40% calc(100% - 11px), 35% calc(100% - 2px), 30% calc(100% - 9px),
+    25% calc(100% - 3px), 20% calc(100% - 10px), 15% calc(100% - 2px),
+    10% calc(100% - 11px), 5% calc(100% - 3px), 0% 100%
+  );
+}
+
 /* Motion reduction */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -91,3 +139,4 @@
     scroll-behavior: auto !important;
   }
 }
+

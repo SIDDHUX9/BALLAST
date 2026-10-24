@@ -40,6 +40,9 @@ const config: Config = {
           DEFAULT: 'var(--color-ember)',
           soft: 'var(--color-ember-soft)',
         },
+        rust: {
+          DEFAULT: 'var(--color-rust)',
+        },
       },
       fontFamily: {
         serif: ['var(--font-serif)', 'Fraunces', 'Georgia', 'serif'],

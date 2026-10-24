@@ -202,7 +202,54 @@ A burner-key connector (`test-connector.ts`) allows headless automated E2E tests
 
 ---
 
+## ADR-0004: Landing Page Visual System & Exact Color Token Resampling
+
+### Status
+
+Accepted
+
+### Date
+
+2026-10-24
+
+### Context & Problem Statement
+
+The landing page (`apps/web/src/app/page.tsx`) must match the high-fidelity editorial reference design (`design-reference/full-mockup.png`) pixel-faithfully. Previous tokens used approximate palette values that resulted in lower visual contrast, wrong warmth for paper textures, and mismatched accent hues compared to the target artwork.
+
+### Decision
+
+1. **Exact Pixel Resampling**: Sample exact colors from the target design using a Sharp-based image analysis script (`scripts/sample-mockup-colors.cjs`).
+2. **Landing Page Token Calibration**: Update design tokens while preserving token variable names (`paper`, `ink`, `ember`, `rust`, `safe`, `watch`, `danger`) so that `/app/*` routes remain stable:
+
+| Token Name | CSS Variable | Old Value | New Resampled Value | Visual Role in Target Design |
+| :--- | :--- | :--- | :--- | :--- |
+| `paper` | `--bg-paper` | `#F4F1EA` | `#F7EFE4` (rgb 247, 239, 228) | Warm cream paper background with natural fiber tones |
+| `paper-raised` | `--bg-paper-raised` | `#FBFAF6` | `#FBF7F0` | Slightly elevated card background (Position Card, Simulator) |
+| `ink` | `--text-ink` | `#14130F` | `#0A1521` (rgb 10, 21, 33) | Editorial navy-black for headings and body typography |
+| `ink-soft` | `--text-ink-soft` | `#3A3830` | `#2C3642` | Subheaders and secondary descriptions |
+| `muted` | `--text-muted` | `#6B675C` | `#6F7883` | Eyebrow labels, mono parameters, tick labels |
+| `ember` | `--color-ember` | `#B8431F` | `#CA461E` (rgb 202, 70, 30) | Primary accent orange (italic headline accents, handwritten script, button highlights) |
+| `rust` | `--color-rust` | N/A | `#C1411C` (rgb 193, 65, 28) | Deep terracotta/rust inset panel background for Interactive Simulator |
+| `safe` / `healthy-bg` | `--color-safe-bg` | `rgba(47, 111, 94, 0.09)` | `#BCD99F` | Soft pastel sage-green background for "Healthy" status pill |
+| `safe` / `healthy-text`| `--color-safe` | `#2F6F5E` | `#2D6A2E` | Deep green text inside "Healthy" status pill |
+| `watch` / `amber` | `--color-watch` | `#B7791F` | `#F5AF61` | Amber caution zone in gauge bar and simulator |
+| `danger` / `red` | `--color-danger` | `#A32020` | `#E16839` | Liquidation risk zone in gauge bar and danger thresholds |
+| `blue-paper` | `--color-torn-blue` | N/A | `#3D5266` | Deep navy-blue torn paper accent pieces flanking collages |
+
+3. **Background Texture & Paper Grain**: Use an inline SVG `feTurbulence` noise grain filter layered over `#F7EFE4` rather than large bitmap textures, ensuring zero weight overhead.
+4. **Torn Paper Edges**: Implement reusable CSS `clip-path` polygon displacement classes (`torn-edge-top`, `torn-edge-bottom`, `torn-edge-y`) recreating the ragged deckle-edge paper borders.
+5. **Fluid Typography**: Replace rigid pixel font sizes with CSS `clamp()` scales (e.g. `clamp(2.75rem, 6vw, 4.75rem)` for hero headline) ensuring flawless scaling across all viewport breakpoints (390px to 1920px).
+
+### Consequences
+
+- Exact visual fidelity with the reference mockup.
+- Total asset weight kept under 600 KB (well within the 1.5 MB limit).
+- Smooth responsive scaling across mobile, tablet, and desktop viewports.
+
+---
+
 ## ADR Template
+
 
 ```markdown
 # ADR-[NUMBER]: [SHORT TITLE]

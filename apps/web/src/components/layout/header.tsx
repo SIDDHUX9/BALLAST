@@ -3,10 +3,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BRAND_NAME, BRAND_TAGLINE } from '@ballast/shared';
+import { BRAND_NAME } from '@ballast/shared';
 import { useTheme } from '../theme-provider';
 import { Sun, Moon, Anchor } from 'lucide-react';
-import { Button } from '../ui/button';
 import { WalletButton } from '../wallet/wallet-button';
 import { NotificationCenter } from '../notifications/notification-center';
 
@@ -42,10 +41,10 @@ export function Header({ walletSlot }: HeaderProps) {
         {/* Brand Wordmark */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2.5 group focus-visible:outline-none">
-            <span className="text-[#14130F] group-hover:text-[#C84E29] transition-colors">
-              <Anchor className="w-5 h-5 stroke-[2.4]" />
+            <span className="text-[#0A1521] group-hover:text-[#CA461E] transition-colors">
+              <Anchor className="w-5 h-5 stroke-[2.2]" />
             </span>
-            <span className="font-serif font-black text-xl text-[#14130F] tracking-wider uppercase leading-none group-hover:text-[#C84E29] transition-colors">
+            <span className="font-serif font-bold text-lg text-[#0A1521] tracking-[0.18em] uppercase leading-none group-hover:text-[#CA461E] transition-colors">
               {BRAND_NAME}
             </span>
           </Link>

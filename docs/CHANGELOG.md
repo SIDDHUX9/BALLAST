@@ -13,6 +13,16 @@ Entries are listed in reverse chronological order (newest first).
 
 ### Added
 
+- **Landing Page Pixel-Faithful Editorial Redesign**:
+  - Rebuilt `/` in `apps/web` to pixel-faithfully match `design-reference/full-mockup.png` across all 6 sections (Hero, The Problem, How It Works, Interactive Simulator, Our Belief, Editorial Footer).
+  - Extracted, masked, and optimized all artwork assets into `apps/web/public/assets/landing/` in modern WebP format with alpha transparency, cutting total image weight to ~593 KB (well below the 1.5 MB limit).
+  - Moved `full-mockup.png` out of `public/` into `design-reference/full-mockup.png` to ensure reference mockups never ship in production builds.
+  - Authored comprehensive element-to-asset inventory map in `docs/LANDING_ASSET_MAP.md`.
+  - Color token calibration recorded in ADR-0004 (`docs/DECISIONS.md`), adding `--color-rust` (`#C1411C`) and exact sampled values for paper (`#F7EFE4`), ink (`#0A1521`), and ember (`#CA461E`).
+  - Added reusable organic deckle torn-paper CSS clip paths (`.torn-edge-top`, `.torn-edge-bottom`, `.torn-edge-y`) and SVG `feTurbulence` paper texture grain.
+  - Created reusable `<Handwritten />` component featuring Google Font script typography and organic inline SVG hand-drawn arrows and underline strokes.
+  - Ensured all UI cards (Position Card, Interactive Simulator) are 100% real interactive React components with live SVG chart calculations, dynamic sliders, and timeframe tabs.
+  - Implemented automated Playwright visual diff test suite (`scripts/landing-diff.ts`) capturing 1440px, 768px, and 390px viewports with side-by-side and pixelmatch overlay generation in `docs/landing-diff/`.
 - Live deployment of Ballast core contracts to Mezo Testnet (Matsnet, Chain ID 31611) at block `16251639`:
   - `BallastVault` (Implementation): `0x815893bad1708a201eeeaf226eed576a7ffea4bc`
   - `BallastFactory`: `0x8d5b392839300b487addeecc35f5bc534111cd33`
