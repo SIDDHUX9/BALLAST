@@ -43,6 +43,11 @@ function useScrollReveal<T extends HTMLElement>(threshold = 0.15) {
 }
 
 export default function LandingPage() {
+  // Lock the landing page to the authentic cream Italian parchment aesthetic
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   // Interactive Simulator State
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y'>('1M');
   const [musdPrice, setMusdPrice] = useState<number>(1.0);
@@ -121,14 +126,14 @@ export default function LandingPage() {
   }, [chartPoints]);
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] text-[#14130F] flex flex-col font-sans selection:bg-[#C84E29] selection:text-white overflow-x-hidden">
+    <div className="min-h-screen bg-[#F6EEE3] text-[#14130F] flex flex-col font-sans selection:bg-[#C84E29] selection:text-white overflow-x-hidden">
       <Header />
 
       <main className="grow">
         {/* ========================================================= */}
-        {/* SECTION 1: HERO SECTION                                   */}
+        {/* SECTION 1: HERO SECTION (BG: #F6EEE3)                     */}
         {/* ========================================================= */}
-        <section className="relative pt-8 md:pt-14 pb-16 md:pb-24 overflow-hidden">
+        <section className="relative bg-[#F6EEE3] pt-6 md:pt-12 pb-16 md:pb-24 overflow-hidden">
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-4 items-center">
               
@@ -291,12 +296,12 @@ export default function LandingPage() {
 
 
         {/* ========================================================= */}
-        {/* SECTION 2: THE PROBLEM                                    */}
+        {/* SECTION 2: THE PROBLEM (BG: #F6EEE3)                      */}
         {/* ========================================================= */}
         <section
           id="problem"
           ref={problemReveal.ref}
-          className="py-16 md:py-28 overflow-hidden"
+          className="relative bg-[#F6EEE3] py-16 md:py-28 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
@@ -366,12 +371,12 @@ export default function LandingPage() {
 
 
         {/* ========================================================= */}
-        {/* SECTION 3: HOW IT WORKS (3 SIMPLE STEPS)                   */}
+        {/* SECTION 3: HOW IT WORKS (BG: #F6EEE3)                     */}
         {/* ========================================================= */}
         <section
           id="how-it-works"
           ref={stepsReveal.ref}
-          className="relative py-16 md:py-28 overflow-hidden"
+          className="relative bg-[#F6EEE3] py-16 md:py-28 overflow-hidden"
         >
           <div className="max-w-container mx-auto px-4 md:px-8">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
@@ -469,12 +474,12 @@ export default function LandingPage() {
 
 
         {/* ========================================================= */}
-        {/* SECTION 4: INTERACTIVE SIMULATOR (TERRACOTTA ARTWORK)      */}
+        {/* SECTION 4: INTERACTIVE SIMULATOR (BG: #C75128 TERRACOTTA) */}
         {/* ========================================================= */}
         <section
           id="simulator"
           ref={simulatorReveal.ref}
-          className="relative py-20 md:py-32 bg-[#C34928] text-white overflow-hidden"
+          className="relative py-20 md:py-32 bg-[#C75128] text-white overflow-hidden"
         >
           {/* Background Colosseum Artwork Image with Blend */}
           <div className="absolute inset-0 z-0 opacity-40 mix-blend-multiply pointer-events-none select-none">
@@ -482,7 +487,7 @@ export default function LandingPage() {
               src="/assets/terracotta-colosseum.jpg"
               alt="Terracotta collage with Colosseum arches and warm textures"
               fill
-              className="object-cover object-center"
+              className="object-cover object-bottom"
             />
           </div>
 
@@ -509,7 +514,7 @@ export default function LandingPage() {
 
                 <div className="pt-2">
                   <Link href="/app/stress-test">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C34928] transition-all duration-200 shadow-md">
+                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C75128] transition-all duration-200 shadow-md">
                       <span>Try the simulator</span>
                       <ArrowRight className="w-4 h-4 stroke-[2]" />
                     </button>
@@ -749,24 +754,35 @@ export default function LandingPage() {
 
 
         {/* ========================================================= */}
-        {/* SECTION 5: OUR BELIEF                                     */}
+        {/* SECTION 5: OUR BELIEF (BG: belief-david-facade.jpg)       */}
         {/* ========================================================= */}
         <section
           id="belief"
           ref={beliefReveal.ref}
-          className="relative py-20 md:py-32 overflow-hidden"
+          className="relative py-24 md:py-36 bg-[#F6EEE3] overflow-hidden"
         >
-          <div className="max-w-container mx-auto px-4 md:px-8">
+          {/* Full Panorama Background Artwork matching mockup exactly */}
+          <div className="absolute inset-0 z-0 pointer-events-none select-none">
+            <Image
+              src="/assets/belief-david-facade.jpg"
+              alt="Classical David with orange fruit and Italian architectural facade"
+              fill
+              className="object-cover object-center"
+              priority
+            />
+          </div>
+
+          <div className="relative z-10 max-w-container mx-auto px-4 md:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
               
-              {/* Left Column: Sculpture Collage with "YOUR POSITION. YOUR RULES." */}
+              {/* Left Column: Spacer area aligned over David bust with handwritten annotation */}
               <div
                 className={`lg:col-span-5 relative transition-all duration-1000 ease-out ${
                   beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-16'
                 }`}
               >
                 {/* Handwritten Tag: YOUR POSITION. YOUR RULES. */}
-                <div className="absolute -top-10 left-4 z-20 flex flex-col items-start select-none pointer-events-none">
+                <div className="absolute -top-12 left-2 z-20 flex flex-col items-start select-none pointer-events-none">
                   <span className="font-hand text-[#C84E29] text-xl sm:text-2xl font-bold tracking-wide rotate-3 whitespace-nowrap">
                     YOUR POSITION.<br />YOUR RULES.
                   </span>
@@ -776,16 +792,8 @@ export default function LandingPage() {
                   </svg>
                 </div>
 
-                {/* David with Orange Sculpture Collage Artwork */}
-                <div className="relative select-none max-w-md mx-auto">
-                  <Image
-                    src="/assets/belief-david-cutout.png"
-                    alt="Classical sculpture with sunglasses, orange fruit, and orange blossoms"
-                    width={560}
-                    height={680}
-                    className="w-full h-auto object-contain filter drop-shadow-sm transform hover:scale-[1.02] transition-transform duration-700 ease-out"
-                  />
-                </div>
+                {/* Subtle invisible spacer to preserve natural placement over the background David image */}
+                <div className="h-[280px] sm:h-[380px] w-full" />
               </div>
 
               {/* Right Column: Narrative & Links */}
@@ -827,7 +835,7 @@ export default function LandingPage() {
 
                 {/* Decorative Stamp Badge on Bottom Right */}
                 <div className="pt-6 flex justify-end">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 border border-dashed border-[#C84E29]/50 rounded-sm font-hand text-sm font-bold text-[#C84E29] rotate-2 select-none">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 border border-dashed border-[#C84E29]/50 rounded-sm font-hand text-sm font-bold text-[#C84E29] rotate-2 select-none bg-white/40 backdrop-blur-xs">
                     <span>BUILT FOR A MORE STABLE MUSD ECOSYSTEM</span>
                   </div>
                 </div>
@@ -839,9 +847,9 @@ export default function LandingPage() {
       </main>
 
       {/* ========================================================= */}
-      {/* BESPOKE EDITORIAL FOOTER                                   */}
+      {/* BESPOKE EDITORIAL FOOTER (BG: #F6EEE3)                    */}
       {/* ========================================================= */}
-      <footer className="border-t border-[#DFD9CC] bg-[#EFEAE0] text-[#14130F] transition-colors">
+      <footer className="border-t border-[#DFD9CC] bg-[#F6EEE3] text-[#14130F] transition-colors">
         <div className="max-w-container mx-auto px-4 md:px-8 py-16">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12 items-start pb-12 border-b border-[#DFD9CC]">
             
