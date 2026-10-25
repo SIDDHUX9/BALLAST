@@ -9,6 +9,8 @@ export const BRAND_DESCRIPTION =
 
 export const BRAND_URLS = {
   github: 'https://github.com/SIDDHUX9/BALLAST',
+  twitter: 'https://x.com/Siddhu_3116',
+  x: 'https://x.com/Siddhu_3116',
   mezoDocs: 'https://mezo.org/docs/developers',
   mezoExplorer: 'https://explorer.test.mezo.org',
   mezoRpc: 'https://rpc.test.mezo.org',

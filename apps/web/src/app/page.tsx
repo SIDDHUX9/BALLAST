@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '../components/layout/header';
-import { BRAND_NAME } from '@ballast/shared';
+import { BRAND_NAME, BRAND_URLS } from '@ballast/shared';
 import {
   Anchor,
   ArrowRight,
@@ -14,8 +14,10 @@ import {
   ShieldCheck,
   Link2,
   Zap,
+  ExternalLink,
 } from 'lucide-react';
 import { Handwritten } from '../components/landing/handwritten';
+import { MATSNET_DEPLOYMENT } from '../lib/deployment';
 
 // Smooth scroll reveal hook
 interface ScrollRevealOptions {
@@ -905,7 +907,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12 items-start pb-14 border-b border-[#0A1521]/10">
 
             {/* Identity & Mission */}
-            <div className="md:col-span-4 space-y-4">
+            <div className="md:col-span-3 space-y-4">
               <Link href="/" className="flex items-center gap-2.5 group">
                 <span className="text-[#0A1521] group-hover:text-[#CA461E] transition-colors">
                   <Anchor className="w-5 h-5 stroke-[2.2]" />
@@ -916,15 +918,16 @@ export default function LandingPage() {
               </Link>
 
               <p className="text-xs sm:text-sm font-sans text-[#6F7883] leading-relaxed max-w-sm">
-                Risk tools for a more stable MUSD ecosystem.
+                Autonomous liquidation and redemption guardian for MUSD troves on Mezo.
               </p>
 
               {/* Three Social Icons */}
               <div className="flex items-center gap-3 pt-1 text-[#2C3642]">
                 <a
-                  href="https://twitter.com"
+                  href={BRAND_URLS.x}
                   target="_blank"
                   rel="noreferrer"
+                  title="Follow on X (@Siddhu_3116)"
                   className="w-8 h-8 rounded-full border border-[#0A1521]/15 flex items-center justify-center hover:text-[#CA461E] hover:border-[#CA461E] transition-colors"
                 >
                   <span className="font-mono text-xs font-bold">X</span>
@@ -941,6 +944,7 @@ export default function LandingPage() {
                   href="https://github.com/SIDDHUX9/BALLAST"
                   target="_blank"
                   rel="noreferrer"
+                  title="GitHub Repository"
                   className="w-8 h-8 rounded-full border border-[#0A1521]/15 flex items-center justify-center hover:text-[#CA461E] hover:border-[#CA461E] transition-colors"
                 >
                   <span className="font-mono text-xs font-bold">&lt;/&gt;</span>
@@ -949,7 +953,7 @@ export default function LandingPage() {
             </div>
 
             {/* Protocol Column */}
-            <div className="md:col-span-2 space-y-2.5 md:border-l md:border-[#0A1521]/10 md:pl-8">
+            <div className="md:col-span-2 space-y-2.5 md:border-l md:border-[#0A1521]/10 md:pl-6">
               <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521] block mb-1">
                 Protocol
               </span>
@@ -965,6 +969,11 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
+                  <Link href="/app" className="hover:text-[#0A1521] transition-colors">
+                    Borrower App
+                  </Link>
+                </li>
+                <li>
                   <Link href="/app/activity" className="hover:text-[#0A1521] transition-colors">
                     Changelog
                   </Link>
@@ -972,20 +981,77 @@ export default function LandingPage() {
               </ul>
             </div>
 
+            {/* Smart Contracts Column */}
+            <div className="md:col-span-3 space-y-2.5 md:border-l md:border-[#0A1521]/10 md:pl-6">
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521]">
+                  Smart Contracts
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#BCD99F]/40 text-[#2D6A2E] font-medium">
+                  31611
+                </span>
+              </div>
+              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
+                <li>
+                  <a
+                    href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastFactory}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-[#0A1521] transition-colors inline-flex items-center gap-1 group/c"
+                  >
+                    <span>BallastFactory</span>
+                    <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
+                      0x8d5b...cd33
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastVaultImplementation}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-[#0A1521] transition-colors inline-flex items-center gap-1 group/c"
+                  >
+                    <span>BallastVault (Logic)</span>
+                    <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
+                      0x8158...a4bc
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-[#0A1521] transition-colors inline-flex items-center gap-1 group/c"
+                  >
+                    <span>BallastVault (Clone)</span>
+                    <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
+                      0xA506...5D5A
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                  </a>
+                </li>
+              </ul>
+            </div>
+
             {/* Community Column */}
-            <div className="md:col-span-2 space-y-2.5">
+            <div className="md:col-span-2 space-y-2.5 md:border-l md:border-[#0A1521]/10 md:pl-6">
               <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521] block mb-1">
                 Community
               </span>
               <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
                 <li>
                   <a
-                    href="https://twitter.com"
+                    href={BRAND_URLS.x}
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors"
+                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
                   >
-                    X
+                    <span>X (@Siddhu_3116)</span>
+                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                   </a>
                 </li>
                 <li>
@@ -993,43 +1059,196 @@ export default function LandingPage() {
                     href="https://github.com/SIDDHUX9/BALLAST"
                     target="_blank"
                     rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors"
+                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
                   >
-                    GitHub
+                    <span>GitHub</span>
+                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                   </a>
                 </li>
                 <li>
                   <a
-                    href="mailto:contact@ballast.fi"
-                    className="hover:text-[#0A1521] transition-colors"
+                    href={BRAND_URLS.mezoDocs}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
                   >
-                    Contact
+                    <span>Mezo Docs</span>
+                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
                   </a>
                 </li>
               </ul>
             </div>
 
             {/* Newsletter Input with Circle Arrow Button */}
-            <div className="md:col-span-4 space-y-3">
-              <div className="flex items-center rounded-xl bg-white border border-[#0A1521]/15 p-1.5 pl-4 shadow-sm">
+            <div className="md:col-span-2 space-y-3">
+              <div className="flex items-center rounded-xl bg-white border border-[#0A1521]/15 p-1.5 pl-3 shadow-sm">
                 <input
                   type="email"
                   placeholder="Get updates"
-                  className="bg-transparent text-xs sm:text-sm font-sans text-[#0A1521] placeholder-[#6F7883] focus:outline-none w-full"
+                  className="bg-transparent text-xs font-sans text-[#0A1521] placeholder-[#6F7883] focus:outline-none w-full min-w-0"
                 />
                 <button
                   type="button"
                   aria-label="Submit newsletter subscription"
-                  className="w-7 h-7 rounded-full bg-[#0A1521] text-white flex items-center justify-center shrink-0 hover:bg-[#CA461E] transition-colors"
+                  className="w-7 h-7 rounded-full bg-[#0A1521] text-white flex items-center justify-center shrink-0 hover:bg-[#CA461E] transition-colors ml-1"
                 >
                   <ArrowRight className="w-3.5 h-3.5 stroke-[2.2]" />
                 </button>
               </div>
-              <p className="text-xs font-sans text-[#6F7883]">
-                No noise. Just important updates.
+              <p className="text-[11px] font-sans text-[#6F7883]">
+                No noise. Just updates.
               </p>
             </div>
 
+          </div>
+
+          {/* Verified Deployed Contracts Strip */}
+          <div className="border-t border-[#0A1521]/10 pt-8 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#CA461E] animate-pulse" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
+                  Verified On-Chain Contracts
+                </span>
+                <span className="text-[11px] font-mono text-[#6F7883]">
+                  (Mezo Matsnet Testnet &middot; Chain ID 31611)
+                </span>
+              </div>
+              <a
+                href={BRAND_URLS.mezoExplorer}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#6F7883] hover:text-[#CA461E] transition-colors"
+              >
+                <span>Mezo Blockscout Explorer</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+              {/* Contract 1: BallastFactory */}
+              <div className="p-3.5 rounded-xl border border-[#0A1521]/10 bg-white/70 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E]/40 transition-all">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-mono text-xs font-bold text-[#0A1521] uppercase tracking-wide">
+                      BallastFactory
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#CA461E]/10 text-[#CA461E] font-semibold">
+                      Proxy Factory
+                    </span>
+                  </div>
+                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                    Deterministic minimal proxy factory for autonomous borrower vaults.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#0A1521]/08 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-[#0A1521]/80">
+                    0x8d5b...cd33
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <a
+                      href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/BallastFactory.sol"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                    >
+                      Source
+                    </a>
+                    <a
+                      href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastFactory}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contract 2: BallastVault Implementation */}
+              <div className="p-3.5 rounded-xl border border-[#0A1521]/10 bg-white/70 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E]/40 transition-all">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-mono text-xs font-bold text-[#0A1521] uppercase tracking-wide">
+                      BallastVault (Logic)
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#BCD99F] text-[#2D6A2E] font-semibold">
+                      Master Impl
+                    </span>
+                  </div>
+                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                    Master defense execution logic, reserve accounting, and keeper entrypoint.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#0A1521]/08 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-[#0A1521]/80">
+                    0x8158...a4bc
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <a
+                      href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/BallastVault.sol"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                    >
+                      Source
+                    </a>
+                    <a
+                      href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastVaultImplementation}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contract 3: Active Borrower Vault Clone */}
+              <div className="p-3.5 rounded-xl border border-[#0A1521]/10 bg-white/70 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E]/40 transition-all">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-mono text-xs font-bold text-[#0A1521] uppercase tracking-wide">
+                      BallastVault (Clone)
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#0A1521]/10 text-[#0A1521] font-semibold">
+                      Active Vault
+                    </span>
+                  </div>
+                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                    Live borrower defense vault clone on Matsnet with pre-funded reserves.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#0A1521]/08 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-[#0A1521]/80">
+                    0xA506...5D5A
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <a
+                      href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/libraries/BallastMath.sol"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                    >
+                      Math Lib
+                    </a>
+                    <a
+                      href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Bottom Bar: Copyright & Architectural Florence Duomo Sketch */}

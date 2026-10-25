@@ -138,6 +138,15 @@ export function Footer() {
             >
               <span>Borrower App Shell</span>
             </Link>
+            <a
+              href={BRAND_URLS.x}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
+            >
+              <span>X (@Siddhu_3116)</span>
+              <ExternalLink className="w-3 h-3 stroke-[1.5]" />
+            </a>
           </div>
         </div>
 
