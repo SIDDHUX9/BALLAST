@@ -33,9 +33,9 @@
     }
   },
   "scripts": {
-    "prepare": "npm run build",
-    "build": "esbuild src/index.ts src/brand.ts src/protocol.ts src/math.ts src/schemas.ts src/deployments.ts --outdir=dist --format=esm --sourcemap && esbuild src/index.ts src/brand.ts src/protocol.ts src/math.ts src/schemas.ts src/deployments.ts --outdir=dist --out-extension:.js=.cjs --format=cjs --sourcemap && tsc --emitDeclarationOnly --outDir dist --declaration",
-    "dev": "tsc --watch",
+    "prepare": "tsup",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
@@ -47,6 +47,7 @@
   "devDependencies": {
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "2.1.9",
+    "esbuild": "^0.24.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
