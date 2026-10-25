@@ -33,9 +33,9 @@
     }
   },
   "scripts": {
-    "prepare": "tsup",
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "prepare": "npm run build",
+    "build": "esbuild src/index.ts src/brand.ts src/protocol.ts src/math.ts src/schemas.ts src/deployments.ts --outdir=dist --format=esm --sourcemap && esbuild src/index.ts src/brand.ts src/protocol.ts src/math.ts src/schemas.ts src/deployments.ts --outdir=dist --out-extension:.js=.cjs --format=cjs --sourcemap && tsc --emitDeclarationOnly --outDir dist --declaration",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"

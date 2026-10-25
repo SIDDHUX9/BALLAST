@@ -4,16 +4,20 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '../components/layout/header';
-import { BRAND_NAME, BRAND_URLS } from '@ballast/shared';
+import {
+  BRAND_NAME,
+  PROTOCOL_CONSTANTS,
+  computeICR,
+  simulateStressTest,
+} from '@ballast/shared';
+import { LANDING_CONTENT } from '../content/landing';
 import {
   Anchor,
   ArrowRight,
   ArrowUpRight,
-  BarChart3,
-  Box,
   ShieldCheck,
-  Link2,
   Zap,
+  TrendingDown,
   ExternalLink,
 } from 'lucide-react';
 import { Handwritten } from '../components/landing/handwritten';
@@ -68,26 +72,98 @@ function useScrollReveal<T extends HTMLElement>(options?: number | ScrollRevealO
 }
 
 export default function LandingPage() {
-  // Interactive Simulator State
-  const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '1Y'>('1M');
-  const [musdPrice, setMusdPrice] = useState<number>(1.0);
-  const [collateralValue, setCollateralValue] = useState<number>(10000);
-  const [volatilityPercent, setVolatilityPercent] = useState<number>(20);
-  const [activeChartPoint, setActiveChartPoint] = useState<number>(4);
+  // Simulator State driven by real mathematical parameters
+  // Initial position: Collateral $10,000, Debt $6,000 (ICR 166.7%)
+  const [btcPriceDrop, setBtcPriceDrop] = useState<number>(20);
+  const [reserveMusd, setReserveMusd] = useState<number>(1200);
+  const [triggerRatio, setTriggerRatio] = useState<number>(135);
+  const [activeChartIndex, setActiveChartIndex] = useState<number>(4); // index corresponding to 20% drop
 
-  // Derived mathematical metrics for simulator
-  const debt = 3000;
-  const effectiveDebt = debt * musdPrice;
-  const simulatedICR = effectiveDebt > 0 ? (collateralValue / (effectiveDebt * 1.4706)) * 100 : 0;
-  const icrFormatted = simulatedICR > 0 ? simulatedICR.toFixed(1) : '226.7';
+  const initialCollateralUSD = LANDING_CONTENT.hero.card.initialCollateralUSD; // $10,000
+  const initialDebtUSD = LANDING_CONTENT.hero.card.initialDebtUSD; // $6,000
 
-  // Health state based on ratio
+  // Pure mathematical simulation using shared math functions
+  const simulationResults = useMemo(() => {
+    // 0.15 BTC at $66,666.67 initial price = $10,000 collateral
+    const collateralWei = 150000000000000000n; // 0.15e18
+    const debtWei = BigInt(initialDebtUSD) * 10n ** 18n; // 6,000e18
+    const initialPriceWei = 66666666666666666666666n; // $66,666.67e18
+    const triggerICRWei = BigInt(triggerRatio) * 10n ** 16n; // e.g. 135 -> 1.35e18
+    const targetICRWei = 1600000000000000000n; // 1.60e18
+    const musdReserveWei = BigInt(reserveMusd) * 10n ** 18n;
+
+    // Run pure stress test simulation across 0% to 50% price drops (11 points: step 5%)
+    const drops = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+    const dropData = drops.map((dropPct) => {
+      const res = simulateStressTest({
+        collateral: collateralWei,
+        debt: debtWei,
+        currentPrice: initialPriceWei,
+        priceDropPercent: dropPct,
+        triggerICR: triggerICRWei,
+        targetICR: targetICRWei,
+        maxTipBps: 50,
+        musdReserve: musdReserveWei,
+        btcReserve: 0n,
+        mcr: PROTOCOL_CONSTANTS.MCR,
+      });
+
+      const currentCollateralVal = initialCollateralUSD * (1 - dropPct / 100);
+      const unprotectedRatio = (currentCollateralVal / initialDebtUSD) * 100;
+
+      // Find final point in simulation points
+      const lastPoint = res.points[res.points.length - 1];
+      const protectedRatio = lastPoint
+        ? Number(lastPoint.protectedICR / 10n ** 15n) / 10
+        : unprotectedRatio;
+
+      const remainingDebt = lastPoint
+        ? initialDebtUSD - Number(res.defenseSteps.reduce((acc, s) => acc + s.musdRepaid, 0n) / 10n ** 18n)
+        : initialDebtUSD;
+
+      return {
+        dropPercent: dropPct,
+        unprotectedRatio,
+        protectedRatio,
+        collateralValue: currentCollateralVal,
+        debt: remainingDebt,
+        isDefended: res.hasDefended,
+      };
+    });
+
+    return dropData;
+  }, [initialCollateralUSD, initialDebtUSD, triggerRatio, reserveMusd]);
+
+  // Active point state derived from current btcPriceDrop
+  const activeDataPoint = useMemo(() => {
+    // Find closest data point
+    const closest = simulationResults.reduce((prev, curr) =>
+      Math.abs(curr.dropPercent - btcPriceDrop) < Math.abs(prev.dropPercent - btcPriceDrop)
+        ? curr
+        : prev
+    );
+    return closest;
+  }, [simulationResults, btcPriceDrop]);
+
+  // Formatted ICR for hero and simulator
+  const heroInitialICR = useMemo(() => {
+    const icrBig = computeICR(
+      BigInt(initialCollateralUSD) * 10n ** 18n,
+      BigInt(initialDebtUSD) * 10n ** 18n,
+      10n ** 18n
+    );
+    return (Number(icrBig / 10n ** 15n) / 10).toFixed(1); // 166.7%
+  }, [initialCollateralUSD, initialDebtUSD]);
+
+  const activeICRFormatted = activeDataPoint.protectedRatio.toFixed(1);
+
+  // Health state based on active protected ratio
   let healthState: 'healthy' | 'caution' | 'danger' = 'healthy';
   let healthLabel = 'Healthy';
-  if (simulatedICR < 130) {
+  if (activeDataPoint.protectedRatio < 130) {
     healthState = 'danger';
     healthLabel = 'Danger';
-  } else if (simulatedICR < 175) {
+  } else if (activeDataPoint.protectedRatio < 160) {
     healthState = 'caution';
     healthLabel = 'Caution';
   }
@@ -104,66 +180,74 @@ export default function LandingPage() {
   const simulatorReveal = useScrollReveal<HTMLDivElement>(0.05);
   const beliefReveal = useScrollReveal<HTMLDivElement>(0.05);
 
-  // Dedicated Artwork Slide-in Reveal Refs (animate as user scrolls into view)
+  // Dedicated Artwork Slide-in Reveal Refs
   const problemArtworkReveal = useScrollReveal<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '0px 0px -40px 0px',
-    resetOnExit: true,
+    resetOnExit: false,
   });
   const pointingArmReveal = useScrollReveal<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '0px 0px -40px 0px',
-    resetOnExit: true,
+    resetOnExit: false,
   });
   const beliefDavidReveal = useScrollReveal<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '0px 0px -40px 0px',
-    resetOnExit: true,
+    resetOnExit: false,
   });
 
-  // Chart points data generated dynamically based on active timeframe and ICR
-  const chartPoints = useMemo(() => {
-    const base = simulatedICR > 0 ? simulatedICR : 226.7;
-    const vFactor = volatilityPercent / 100;
-    const offsets = [-0.08, 0.05, -0.03, 0.09, 0.0, -0.04, 0.02];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
-
-    return offsets.map((offset, idx) => {
-      const val = Math.max(90, Math.min(320, base * (1 + offset * vFactor)));
-      return {
-        label: months[idx],
-        value: val,
-        date: `${months[idx]} 14, 2026`,
-      };
-    });
-  }, [simulatedICR, volatilityPercent]);
-
-  // SVG Chart path generation matching 100%/200%/300% axis
-  const chartSvgPath = useMemo(() => {
+  // SVG Chart path generation matching 80% to 200% Y-axis
+  const chartSvgData = useMemo(() => {
     const width = 600;
     const height = 180;
-    const minVal = 80;
-    const maxVal = 320;
+    const minRatio = 80;
+    const maxRatio = 200;
 
-    const points = chartPoints.map((pt, idx) => {
-      const x = (idx / (chartPoints.length - 1)) * width;
-      const normalizedY = 1 - (pt.value - minVal) / (maxVal - minVal);
-      const y = Math.max(15, Math.min(height - 20, normalizedY * height));
+    const mapPoint = (dropPct: number, ratio: number) => {
+      const x = (dropPct / 50) * width;
+      const normalizedY = 1 - (ratio - minRatio) / (maxRatio - minRatio);
+      const y = Math.max(10, Math.min(height - 10, normalizedY * height));
       return { x, y };
-    });
+    };
 
-    let linePath = `M ${points[0].x} ${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[i];
-      const p1 = points[i + 1];
+    // Unprotected path (without Ballast)
+    const unprotPoints = simulationResults.map((pt) =>
+      mapPoint(pt.dropPercent, pt.unprotectedRatio)
+    );
+    let unprotPath = `M ${unprotPoints[0].x} ${unprotPoints[0].y}`;
+    for (let i = 0; i < unprotPoints.length - 1; i++) {
+      const p0 = unprotPoints[i];
+      const p1 = unprotPoints[i + 1];
       const cpX = (p0.x + p1.x) / 2;
-      linePath += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
+      unprotPath += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
     }
 
-    const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
+    // Protected path (with Ballast)
+    const protPoints = simulationResults.map((pt) =>
+      mapPoint(pt.dropPercent, pt.protectedRatio)
+    );
+    let protPath = `M ${protPoints[0].x} ${protPoints[0].y}`;
+    for (let i = 0; i < protPoints.length - 1; i++) {
+      const p0 = protPoints[i];
+      const p1 = protPoints[i + 1];
+      const cpX = (p0.x + p1.x) / 2;
+      protPath += ` C ${cpX} ${p0.y}, ${cpX} ${p1.y}, ${p1.x} ${p1.y}`;
+    }
 
-    return { linePath, areaPath, points };
-  }, [chartPoints]);
+    const protAreaPath = `${protPath} L ${width} ${height} L 0 ${height} Z`;
+
+    // 110% Liquidation Line Y position
+    const liquidationY = height * (1 - (110 - minRatio) / (maxRatio - minRatio));
+
+    return {
+      unprotPath,
+      protPath,
+      protAreaPath,
+      protPoints,
+      liquidationY,
+    };
+  }, [simulationResults]);
 
   return (
     <div className="min-h-screen bg-[#F7EFE4] text-[#0A1521] flex flex-col font-sans selection:bg-[#CA461E] selection:text-white overflow-x-hidden paper-texture">
@@ -174,140 +258,153 @@ export default function LandingPage() {
         {/* SECTION 1: HERO SECTION                                   */}
         {/* ========================================================= */}
         <section
-          className="relative pt-4 sm:pt-8 md:pt-10 pb-16 sm:pb-20 md:pb-28 overflow-hidden bg-cover bg-right-top bg-no-repeat"
+          className="relative pt-6 sm:pt-10 md:pt-12 pb-16 sm:pb-24 lg:pb-32 overflow-hidden bg-cover bg-right-top bg-no-repeat"
           style={{ backgroundImage: "url('/assets/landing/hero-david.webp')" }}
         >
-          <div className="relative z-10 w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0">
-            <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
+          {/* Responsive overlay on mobile for pristine text contrast over background artwork */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F7EFE4]/92 via-[#F7EFE4]/75 to-transparent lg:hidden pointer-events-none" />
+
+          <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-0">
 
               {/* Left Column: Headlines & CTA Buttons */}
               <div
                 ref={heroReveal.ref}
-                className={`lg:col-span-5 space-y-6 z-10 pr-6 sm:pr-8 transition-all duration-700 ease-out ${heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                  }`}
+                className={`lg:col-span-5 space-y-5 sm:space-y-6 z-10 lg:pr-8 transition-all duration-700 ease-out ${
+                  heroReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
               >
                 {/* Eyebrow */}
                 <div className="inline-flex items-center">
-                  <span className="text-[11px] sm:text-xs font-mono font-semibold tracking-[0.2em] uppercase text-[#6F7883]">
-                    MUSD · COLLATERAL RISK INFRASTRUCTURE
+                  <span className="text-[11px] sm:text-xs font-mono font-semibold tracking-[0.2em] uppercase text-[#525C66]">
+                    {LANDING_CONTENT.hero.eyebrow}
                   </span>
                 </div>
 
-                {/* Primary Headline with clamp typography */}
-                <h1 className="text-6xl sm:text-7xl lg:text-[84px] xl:text-[92px] font-serif font-normal tracking-tight text-[#0A1521] leading-[0.95]">
-                  Lend<br />
-                  Bitcoin<br />
+                {/* Primary Headline (responsive sizing) */}
+                <h1 className="text-[38px] min-[400px]:text-[46px] sm:text-6xl md:text-7xl lg:text-[84px] xl:text-[92px] font-serif font-normal tracking-tight text-[#0A1521] leading-[0.98] sm:leading-[0.95]">
+                  {LANDING_CONTENT.hero.headline.line1}<br />
+                  {LANDING_CONTENT.hero.headline.line2}<br />
                   <span className="italic font-serif text-[#CA461E]">
-                    with clarity.
+                    {LANDING_CONTENT.hero.headline.line3ItalicEmber}
                   </span>
                 </h1>
 
-                {/* Subtitle */}
+                {/* Subtitle / Body */}
                 <p className="text-base sm:text-lg font-sans text-[#2C3642] leading-relaxed max-w-[460px]">
-                  Ballast helps MUSD borrowers understand liquidation risk, model market scenarios,
-                  and keep a deliberate buffer between their position and the edge.
+                  {LANDING_CONTENT.hero.body}
                 </p>
 
                 {/* CTA Action Buttons */}
-                <div className="flex flex-wrap items-center gap-4 pt-1">
-                  <Link href="/app/overview">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm hover:shadow">
-                      <span>Launch App</span>
+                <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 pt-1">
+                  <Link href={LANDING_CONTENT.hero.ctaPrimary.href}>
+                    <button className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm hover:shadow">
+                      <span>{LANDING_CONTENT.hero.ctaPrimary.label}</span>
                       <ArrowUpRight className="w-4 h-4 stroke-[2.2]" />
                     </button>
                   </Link>
-                  <Link href="/whitepaper">
-                    <button className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
-                      <span>Explore the framework</span>
+                  <a href={LANDING_CONTENT.hero.ctaSecondary.href}>
+                    <button className="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
+                      <span>{LANDING_CONTENT.hero.ctaSecondary.label}</span>
                       <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                     </button>
-                  </Link>
+                  </a>
                 </div>
 
-                {/* Three feature items in one row with clean line icons */}
-                <div className="pt-8 border-t border-[#0A1521]/10 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-lg">
+                {/* Three proof items in one row with clean line icons */}
+                <div className="pt-6 sm:pt-8 border-t border-[#0A1521]/10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 max-w-lg">
+                  {/* Proof Item 1: Automatic defense */}
                   <div className="flex items-start gap-3">
-                    <BarChart3 className="w-6 h-6 text-[#0A1521] stroke-[1.8] shrink-0 mt-0.5" />
+                    <Zap className="w-5 h-5 text-[#CA461E] stroke-[2.2] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
-                        Real-time data
-                      </h4>
-                      <p className="text-[11px] font-sans text-[#6F7883] mt-0.5 leading-tight">
-                        Live position monitoring
+                      <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
+                        {LANDING_CONTENT.hero.proofItems[0].title}
+                      </h3>
+                      <p className="text-[11px] font-sans text-[#525C66] mt-0.5 leading-tight">
+                        {LANDING_CONTENT.hero.proofItems[0].description}
                       </p>
                     </div>
                   </div>
 
+                  {/* Proof Item 2: Stress-tested */}
                   <div className="flex items-start gap-3">
-                    <Box className="w-6 h-6 text-[#0A1521] stroke-[1.8] shrink-0 mt-0.5" />
+                    <TrendingDown className="w-5 h-5 text-[#0A1521] stroke-[2.2] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
-                        Scenario analysis
-                      </h4>
-                      <p className="text-[11px] font-sans text-[#6F7883] mt-0.5 leading-tight">
-                        Model market moves
+                      <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
+                        {LANDING_CONTENT.hero.proofItems[1].title}
+                      </h3>
+                      <p className="text-[11px] font-sans text-[#525C66] mt-0.5 leading-tight">
+                        {LANDING_CONTENT.hero.proofItems[1].description}
                       </p>
                     </div>
                   </div>
 
+                  {/* Proof Item 3: You hold the keys */}
                   <div className="flex items-start gap-3">
-                    <ShieldCheck className="w-6 h-6 text-[#0A1521] stroke-[1.8] shrink-0 mt-0.5" />
+                    <ShieldCheck className="w-5 h-5 text-[#2D6A2E] stroke-[2.2] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
-                        Non-custodial
-                      </h4>
-                      <p className="text-[11px] font-sans text-[#6F7883] mt-0.5 leading-tight">
-                        Your positions, your control
+                      <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
+                        {LANDING_CONTENT.hero.proofItems[2].title}
+                      </h3>
+                      <p className="text-[11px] font-sans text-[#525C66] mt-0.5 leading-tight">
+                        {LANDING_CONTENT.hero.proofItems[2].description}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Hero Collage Bleeding to Right Viewport Edge and Header */}
-              <div className="lg:col-span-7 relative flex justify-end pr-0 mt-10 lg:mt-0">
+              {/* Right Column: Hero Collage & Position Card */}
+              <div className="lg:col-span-7 relative flex flex-col lg:flex-row justify-end pr-0 mt-8 sm:mt-12 lg:mt-0">
 
                 {/* Handwritten Annotation top right */}
-                <div className="absolute -top-14 sm:-top-12 right-28 sm:right-48 lg:right-60 xl:right-72 z-30">
+                <div className="hidden sm:block absolute -top-8 right-8 sm:right-24 lg:right-52 xl:right-64 z-30 pointer-events-none select-none">
                   <Handwritten arrow="curved-down-left" rotation="-rotate-3">
-                    SAME MARKETS.{'\n'}BETTER DECISIONS.
+                    {LANDING_CONTENT.hero.note}
                   </Handwritten>
                 </div>
 
-                {/* Hero Artwork Spacer / Position Card */}
-                <div className="relative w-full max-w-[820px] lg:max-w-[880px] xl:max-w-[940px] ml-auto mr-0 aspect-[1024/575]">
-                  {/* Overlapping "Your Position" Card positioned at bottom-right */}
-                  <div className="absolute -bottom-28 sm:-bottom-36 lg:-bottom-40 xl:-bottom-44 right-2 sm:right-6 lg:right-8 z-20 w-[310px] sm:w-[350px] bg-white rounded-2xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(10,21,33,0.12)] border border-[#0A1521]/10 transition-transform duration-300 hover:scale-[1.01]">
+                {/* Hero Artwork Spacer / Position Card Container */}
+                <div className="relative w-full max-w-[820px] lg:max-w-[880px] xl:max-w-[940px] ml-auto mr-0 aspect-auto lg:aspect-[1024/575]">
+                  {/* Position Card: naturally placed on mobile/tablet, overlapping absolute on desktop */}
+                  <div className="relative lg:absolute -bottom-0 lg:-bottom-40 xl:-bottom-44 right-auto lg:right-6 xl:right-8 z-20 mx-auto lg:mx-0 w-full max-w-[340px] sm:max-w-[360px] bg-white rounded-2xl p-5 sm:p-6 shadow-[0_20px_50px_rgba(10,21,33,0.12)] border border-[#0A1521]/10 transition-transform duration-300 hover:scale-[1.01]">
                     <div className="flex items-center justify-between pb-3 border-b border-[#0A1521]/08">
-                      <span className="font-sans font-bold text-sm sm:text-base text-[#0A1521]">Your Position</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-sans font-bold text-sm sm:text-base text-[#0A1521]">
+                          {LANDING_CONTENT.hero.card.title}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-[#0A1521]/05 text-[#525C66] uppercase tracking-wider">
+                          {LANDING_CONTENT.hero.card.tag}
+                        </span>
+                      </div>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#BCD99F] text-[#2D6A2E]">
-                        Healthy
+                        {LANDING_CONTENT.hero.card.pill}
                       </span>
                     </div>
 
                     <div className="pt-3">
-                      <span className="text-[11px] font-mono text-[#6F7883] uppercase tracking-wider block">
-                        Collateral ratio
+                      <span className="text-[11px] font-mono text-[#525C66] uppercase tracking-wider block">
+                        {LANDING_CONTENT.hero.card.ratioLabel}
                       </span>
                       <div className="text-3xl sm:text-4xl font-mono font-bold text-[#0A1521] mt-0.5 tracking-tight">
-                        226.7%
+                        {heroInitialICR}%
                       </div>
 
-                      {/* Calibrated Gauge Bar */}
+                      {/* Calibrated Gauge Bar (110% to 200% scale) */}
                       <div className="mt-4 space-y-1.5">
                         <div className="relative h-2.5 w-full rounded-full bg-gradient-to-r from-[#E16839] via-[#F5AF61] to-[#96B987]">
-                          {/* Needle Indicator */}
+                          {/* Needle Indicator calibrated to 166.7% */}
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#0A1521] border-2 border-white shadow-md transition-all duration-300"
-                            style={{ left: '68%' }}
+                            style={{ left: '63%' }}
                           />
                         </div>
 
                         {/* Three Tick Labels */}
-                        <div className="flex justify-between text-[10px] font-mono text-[#6F7883] pt-0.5">
-                          <span>150% Liquidation</span>
-                          <span>200% Caution</span>
-                          <span className="text-right">&gt; 200% Safe</span>
+                        <div className="flex justify-between text-[10px] font-mono text-[#525C66] pt-0.5">
+                          <span>{LANDING_CONTENT.hero.card.tickLabels.liquidation}</span>
+                          <span>{LANDING_CONTENT.hero.card.tickLabels.trigger}</span>
+                          <span className="text-right">{LANDING_CONTENT.hero.card.tickLabels.target}</span>
                         </div>
                       </div>
                     </div>
@@ -326,37 +423,41 @@ export default function LandingPage() {
         <section
           id="problem"
           ref={problemReveal.ref}
-          className="py-18 sm:py-24 md:py-32 overflow-hidden"
+          className="py-14 sm:py-20 md:py-28 overflow-hidden"
         >
-          <div className="w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0">
-            <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20">
+            <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-0">
 
               {/* Left Column: Problem Narrative */}
               <div
-                className={`lg:col-span-5 space-y-6 pr-6 sm:pr-8 transition-all duration-700 ease-out ${problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
-                  }`}
+                className={`lg:col-span-5 space-y-5 sm:space-y-6 lg:pr-8 transition-all duration-700 ease-out ${
+                  problemReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                }`}
               >
-                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#6F7883] font-semibold block">
-                  THE PROBLEM
+                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#525C66] font-semibold block">
+                  {LANDING_CONTENT.problem.eyebrow}
                 </span>
 
-                <h2 className="text-5xl sm:text-6xl lg:text-[72px] font-serif font-normal text-[#0A1521] leading-[1.0] tracking-tight">
-                  Markets move<br />
-                  fast. <span className="italic font-serif text-[#CA461E]">Uncertainty</span><br />
-                  shouldn’t decide<br />
-                  for you.
+                {/* 4-Line Headline matching exact line count and shape */}
+                <h2 className="text-4xl sm:text-5xl lg:text-[72px] font-serif font-normal text-[#0A1521] leading-[1.02] sm:leading-[1.0] tracking-tight">
+                  {LANDING_CONTENT.problem.headline.line1}<br />
+                  {LANDING_CONTENT.problem.headline.line2}<br />
+                  <span className="italic font-serif text-[#CA461E]">
+                    {LANDING_CONTENT.problem.headline.line3ItalicEmber}<br />
+                    {LANDING_CONTENT.problem.headline.line4ItalicEmber}
+                  </span>
                 </h2>
 
                 <p className="text-base sm:text-lg font-sans text-[#2C3642] leading-relaxed max-w-[460px]">
-                  Volatility, sudden market moves, and complex parameters make it hard to know when you’re really at risk. Guessing leads to liquidations.
+                  {LANDING_CONTENT.problem.body}
                 </p>
 
                 <div className="pt-2">
                   <a
-                    href="#simulator"
+                    href={LANDING_CONTENT.problem.link.href}
                     className="inline-flex items-center gap-2 text-sm font-sans font-semibold text-[#0A1521] hover:text-[#CA461E] transition-colors group"
                   >
-                    <span>See the problem</span>
+                    <span>{LANDING_CONTENT.problem.link.label}</span>
                     <ArrowRight className="w-4 h-4 stroke-[2.2] group-hover:translate-x-1 transition-transform" />
                   </a>
                 </div>
@@ -365,26 +466,28 @@ export default function LandingPage() {
               {/* Right Column: Arch Window Duomo Collage Bleeding Flush to Right Edge */}
               <div
                 ref={problemArtworkReveal.ref}
-                className={`lg:col-span-7 relative flex justify-end pr-0 mt-8 lg:mt-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+                className={`lg:col-span-7 relative flex justify-end pr-0 mt-6 lg:mt-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
                   problemArtworkReveal.isVisible
                     ? 'opacity-100 translate-x-0'
-                    : 'opacity-0 translate-x-24 sm:translate-x-36 lg:translate-x-48'
+                    : 'opacity-0 translate-x-8 sm:translate-x-16 lg:translate-x-48'
                 }`}
               >
                 {/* Handwritten Note with underline stroke */}
-                <div className="absolute top-4 sm:top-8 right-8 sm:right-20 z-20">
+                <div className="absolute top-2 sm:top-6 right-4 sm:right-12 lg:right-20 z-20 pointer-events-none select-none">
                   <Handwritten underline rotation="-rotate-3">
-                    CLEAR DATA.{'\n'}CALMER POSITIONS.{'\n'}MORE CONTROL.
+                    {LANDING_CONTENT.problem.note}
                   </Handwritten>
                 </div>
 
-                {/* Arch Window Duomo Artwork */}
-                <div className="relative w-full max-w-[780px] xl:max-w-[860px] ml-auto mr-0 select-none">
+                {/* Arch Window Duomo Artwork (priority loading ensures image renders in captures) */}
+                <div className="relative w-full max-w-[480px] sm:max-w-[620px] lg:max-w-[780px] xl:max-w-[860px] ml-auto mr-0 select-none">
                   <Image
                     src="/assets/landing/ballast-problem.png"
                     alt="Tuscan arch window framing Florence Duomo with lantern and torn textures"
                     width={576}
                     height={498}
+                    priority={true}
+                    loading="eager"
                     className="w-full h-auto object-contain filter drop-shadow-sm select-none"
                   />
                 </div>
@@ -401,10 +504,10 @@ export default function LandingPage() {
         <section
           id="how-it-works"
           ref={stepsReveal.ref}
-          className="relative py-18 sm:py-24 md:py-32 overflow-hidden"
+          className="relative py-14 sm:py-20 md:py-28 overflow-hidden"
         >
           {/* Orange Watercolor Blob at Left Edge */}
-          <div className="absolute -left-2 top-4 w-28 sm:w-36 h-auto pointer-events-none select-none z-0">
+          <div className="absolute -left-2 top-4 w-20 sm:w-28 md:w-36 h-auto pointer-events-none select-none z-0">
             <Image
               src="/assets/landing/orange-blob.webp"
               alt=""
@@ -415,46 +518,47 @@ export default function LandingPage() {
             />
           </div>
 
-          <div className="w-full max-w-[1600px] mx-auto pl-6 sm:pl-10 lg:pl-16 xl:pl-20 pr-0 relative z-10">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20 relative z-10">
 
             {/* Top Row: Heading on Left, Pointing Arm Entering From Right Edge */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-16 sm:mb-20">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 sm:mb-16 lg:mb-20">
               <div>
-                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#6F7883] font-semibold block mb-2.5">
-                  HOW IT WORKS
+                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#525C66] font-semibold block mb-2.5">
+                  {LANDING_CONTENT.howItWorks.eyebrow}
                 </span>
-                <h2 className="text-5xl sm:text-6xl lg:text-[70px] font-serif font-normal text-[#0A1521] leading-tight">
-                  Three{' '}
+                <h2 className="text-4xl sm:text-5xl lg:text-[70px] font-serif font-normal text-[#0A1521] leading-tight">
+                  {LANDING_CONTENT.howItWorks.headline.regular}{' '}
                   <span className="italic font-serif text-[#CA461E]">
-                    simple
-                  </span>{' '}
-                  steps.
+                    {LANDING_CONTENT.howItWorks.headline.highlight}
+                  </span>
                 </h2>
               </div>
 
               {/* Pointing Arm Artwork with Handwritten Note */}
               <div
                 ref={pointingArmReveal.ref}
-                className={`relative flex items-center gap-4 self-end lg:self-auto mr-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+                className={`relative flex items-center gap-3 sm:gap-4 self-end lg:self-auto mr-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
                   pointingArmReveal.isVisible
                     ? 'opacity-100 translate-x-0'
-                    : 'opacity-0 translate-x-36 sm:translate-x-52 lg:translate-x-72'
+                    : 'opacity-0 translate-x-8 sm:translate-x-16 lg:translate-x-52'
                 }`}
               >
                 {/* Handwritten Tag pointing right */}
-                <div className="mb-2 sm:mb-4">
+                <div className="mb-2 sm:mb-4 pointer-events-none select-none shrink-0">
                   <Handwritten arrow="curved-right" rotation="-rotate-6">
-                    FROM{'\n'}DATA{'\n'}TO{'\n'}DECISIONS.
+                    {LANDING_CONTENT.howItWorks.note}
                   </Handwritten>
                 </div>
 
                 {/* Classical Marble Pointing Arm Reaching From Screen Edge */}
-                <div className="w-[420px] sm:w-[540px] lg:w-[680px] xl:w-[760px] shrink-0 select-none">
+                <div className="w-[220px] min-[400px]:w-[280px] sm:w-[420px] lg:w-[680px] xl:w-[760px] shrink-0 select-none">
                   <Image
                     src="/assets/landing/pointing-arm.webp"
                     alt=""
                     width={1024}
                     height={356}
+                    priority={true}
+                    loading="eager"
                     className="w-full h-auto object-contain filter drop-shadow-sm"
                     aria-hidden="true"
                   />
@@ -463,88 +567,79 @@ export default function LandingPage() {
             </div>
 
             {/* Three Step Columns with Serif Numerals, Underlined Titles, Hairline Dividers */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-0 pt-4 pr-6 sm:pr-10 lg:pr-16 xl:pr-20">
-
-              {/* Step 01 */}
-              <div className="space-y-3.5 md:pr-10 lg:pr-14">
-                <span className="font-serif text-4xl sm:text-5xl font-bold text-[#0A1521] block">01</span>
-                <div className="flex items-center gap-2.5 text-[#0A1521] pt-1">
-                  <Link2 className="w-5 h-5 text-[#CA461E] stroke-[2.2]" />
-                  <h3 className="text-xl font-serif font-bold text-[#0A1521] underline decoration-1 underline-offset-4">
-                    Connect &amp; view
-                  </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 pt-4">
+              {LANDING_CONTENT.howItWorks.steps.map((st, idx) => (
+                <div
+                  key={st.number}
+                  className={`space-y-3.5 ${
+                    idx === 0
+                      ? 'md:pr-10 lg:pr-14'
+                      : idx === 1
+                      ? 'pt-6 border-t border-[#0A1521]/10 md:border-t-0 md:pt-0 md:px-10 lg:px-14 md:border-l md:border-[#0A1521]/15'
+                      : 'pt-6 border-t border-[#0A1521]/10 md:border-t-0 md:pt-0 md:pl-10 lg:pl-14 md:border-l md:border-[#0A1521]/15'
+                  }`}
+                >
+                  <span className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0A1521] block">
+                    {st.number}
+                  </span>
+                  <div className="flex items-center gap-2.5 text-[#0A1521] pt-1">
+                    {idx === 0 ? (
+                      <ShieldCheck className="w-5 h-5 text-[#CA461E] stroke-[2.2] shrink-0" />
+                    ) : idx === 1 ? (
+                      <TrendingDown className="w-5 h-5 text-[#CA461E] stroke-[2.2] shrink-0" />
+                    ) : (
+                      <Zap className="w-5 h-5 text-[#CA461E] stroke-[2.2] shrink-0" />
+                    )}
+                    <h3 className="text-lg sm:text-xl font-serif font-bold text-[#0A1521] underline decoration-1 underline-offset-4">
+                      {st.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm sm:text-base font-sans text-[#525C66] leading-relaxed">
+                    {st.description}
+                  </p>
                 </div>
-                <p className="text-sm sm:text-base font-sans text-[#6F7883] leading-relaxed">
-                  See your position and current risk in real time.
-                </p>
-              </div>
-
-              {/* Step 02 */}
-              <div className="space-y-3.5 md:px-10 lg:px-14 md:border-l md:border-[#0A1521]/15">
-                <span className="font-serif text-4xl sm:text-5xl font-bold text-[#0A1521] block">02</span>
-                <div className="flex items-center gap-2.5 text-[#0A1521] pt-1">
-                  <BarChart3 className="w-5 h-5 text-[#CA461E] stroke-[2.2]" />
-                  <h3 className="text-xl font-serif font-bold text-[#0A1521] underline decoration-1 underline-offset-4">
-                    Stress-test
-                  </h3>
-                </div>
-                <p className="text-sm sm:text-base font-sans text-[#6F7883] leading-relaxed">
-                  Model different market scenarios and discover thresholds.
-                </p>
-              </div>
-
-              {/* Step 03 */}
-              <div className="space-y-3.5 md:pl-10 lg:pl-14 md:border-l md:border-[#0A1521]/15">
-                <span className="font-serif text-4xl sm:text-5xl font-bold text-[#0A1521] block">03</span>
-                <div className="flex items-center gap-2.5 text-[#0A1521] pt-1">
-                  <Zap className="w-5 h-5 text-[#CA461E] stroke-[2.2]" />
-                  <h3 className="text-xl font-serif font-bold text-[#0A1521] underline decoration-1 underline-offset-4">
-                    Take action
-                  </h3>
-                </div>
-                <p className="text-sm sm:text-base font-sans text-[#6F7883] leading-relaxed">
-                  Adjust before you reach the edge with automated buffers.
-                </p>
-              </div>
-
+              ))}
             </div>
           </div>
         </section>
 
 
         {/* ========================================================= */}
-        {/* SECTION 4: INTERACTIVE SIMULATOR                          */}
+        {/* SECTION 4: STRESS TEST SIMULATOR (RUST PANEL)              */}
         {/* ========================================================= */}
         <section
           id="simulator"
           ref={simulatorReveal.ref}
-          className="relative py-20 sm:py-24 md:py-32 overflow-hidden bg-cover bg-left-bottom bg-no-repeat text-white"
+          className="relative py-14 sm:py-20 md:py-28 overflow-hidden bg-cover bg-left-bottom bg-no-repeat text-white"
           style={{ backgroundImage: "url('/assets/landing/simulator-colosseum.webp')" }}
         >
-          <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
               {/* Left Column: Heading, Narrative, and CTA button */}
+              {/* High contrast text styling ensures WCAG AA compliance (> 4.5:1 ratio on rust) */}
               <div
-                className={`lg:col-span-5 space-y-6 transition-all duration-700 ease-out ${simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                  }`}
+                className={`lg:col-span-5 space-y-5 sm:space-y-6 transition-all duration-700 ease-out ${
+                  simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
               >
-                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-white/80 font-semibold block">
-                  INTERACTIVE SIMULATOR
+                <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#FFFFFF] font-bold block drop-shadow-sm">
+                  {LANDING_CONTENT.simulator.eyebrow}
                 </span>
 
-                <h2 className="text-5xl sm:text-6xl lg:text-[70px] font-serif font-normal leading-[1.0] tracking-tight text-white">
-                  Model<br />the unexpected.
+                <h2 className="text-4xl sm:text-5xl lg:text-[70px] font-serif font-normal leading-[1.02] sm:leading-[1.0] tracking-tight text-[#FFFFFF] drop-shadow-sm">
+                  {LANDING_CONTENT.simulator.headline.line1}<br />
+                  {LANDING_CONTENT.simulator.headline.line2}
                 </h2>
 
-                <p className="text-base sm:text-lg font-sans text-white/90 leading-relaxed max-w-md">
-                  Adjust variables, simulate market moves, and see how they impact your position in real time.
+                <p className="text-base sm:text-lg font-sans text-[#FFFFFF] leading-relaxed max-w-md drop-shadow-xs">
+                  {LANDING_CONTENT.simulator.body}
                 </p>
 
                 <div className="pt-2">
-                  <Link href="/app/stress-test">
-                    <button className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C1411C] transition-all duration-200 shadow-md">
-                      <span>Try the simulator</span>
+                  <Link href={LANDING_CONTENT.simulator.cta.href}>
+                    <button className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-white hover:text-[#C1411C] transition-all duration-200 shadow-md">
+                      <span>{LANDING_CONTENT.simulator.cta.label}</span>
                       <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                     </button>
                   </Link>
@@ -553,51 +648,67 @@ export default function LandingPage() {
 
               {/* Right Column: Wide Interactive Position Simulator Card */}
               <div
-                className={`lg:col-span-7 flex justify-end transition-all duration-700 ease-out ${simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                  }`}
+                className={`lg:col-span-7 flex justify-end w-full transition-all duration-700 ease-out ${
+                  simulatorReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                }`}
               >
-                <div className="bg-white text-[#0A1521] rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] w-full max-w-[740px] xl:max-w-[800px]">
+                <div className="bg-white text-[#0A1521] rounded-2xl sm:rounded-3xl p-4 sm:p-7 md:p-8 shadow-[0_24px_60px_rgba(0,0,0,0.25)] w-full max-w-[740px] xl:max-w-[800px]">
 
-                  {/* Card Header & Timeframe Tabs */}
-                  <div className="flex flex-row items-center justify-between gap-3 pb-6 border-b border-[#0A1521]/10">
-                    <h3 className="font-serif font-bold text-xl sm:text-2xl text-[#0A1521]">
-                      Position Simulator
-                    </h3>
+                  {/* Card Header & BTC Drop Preset Tabs */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pb-5 sm:pb-6 border-b border-[#0A1521]/10">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif font-bold text-lg sm:text-2xl text-[#0A1521]">
+                        {LANDING_CONTENT.simulator.card.title}
+                      </h3>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#0A1521]/05 text-[#525C66] uppercase tracking-wider font-semibold">
+                        {LANDING_CONTENT.simulator.card.scenarioTag}
+                      </span>
+                    </div>
 
-                    {/* Timeframe selector pill */}
-                    <div className="flex items-center rounded-full bg-[#F7EFE4] p-1 text-xs font-mono">
-                      {(['1D', '1W', '1M', '1Y'] as const).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTimeframe(t)}
-                          className={`px-3 py-1 rounded-full text-xs transition-all duration-150 ${timeframe === t
-                            ? 'bg-[#0A1521] text-white font-bold shadow-sm'
-                            : 'text-[#6F7883] hover:text-[#0A1521]'
+                    {/* BTC Drop Preset Selector Pills */}
+                    <div className="flex items-center rounded-full bg-[#F7EFE4] p-1 text-xs font-mono overflow-x-auto self-start sm:self-auto max-w-full">
+                      {LANDING_CONTENT.simulator.card.presets.map((preset) => {
+                        const dropNum = parseInt(preset.replace('-', '').replace('%', ''), 10);
+                        const isSelected = btcPriceDrop === dropNum;
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              setBtcPriceDrop(dropNum);
+                              setActiveChartIndex(dropNum / 5);
+                            }}
+                            className={`px-2.5 sm:px-3 py-1 rounded-full text-xs transition-all duration-150 shrink-0 ${
+                              isSelected
+                                ? 'bg-[#0A1521] text-white font-bold shadow-sm'
+                                : 'text-[#525C66] hover:text-[#0A1521]'
                             }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
+                          >
+                            {preset}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Top 3 Live Calculated Metric Tiles */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 py-6 border-b border-[#0A1521]/10">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 py-5 sm:py-6 border-b border-[#0A1521]/10">
                     <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                        Collateral ratio
+                      <span className="text-[11px] font-mono uppercase text-[#525C66] block">
+                        {LANDING_CONTENT.simulator.card.metricLabels.ratio}
                       </span>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         <span className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] tracking-tight">
-                          {icrFormatted}%
+                          {activeICRFormatted}%
                         </span>
                         <span
-                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ${healthState === 'healthy'
-                            ? 'bg-[#BCD99F] text-[#2D6A2E]'
-                            : healthState === 'caution'
+                          className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase ${
+                            healthState === 'healthy'
+                              ? 'bg-[#BCD99F] text-[#2D6A2E]'
+                              : healthState === 'caution'
                               ? 'bg-[#F5AF61]/30 text-[#B7791F]'
                               : 'bg-[#E16839]/20 text-[#E16839]'
-                            }`}
+                          }`}
                         >
                           {healthLabel}
                         </span>
@@ -605,31 +716,58 @@ export default function LandingPage() {
                     </div>
 
                     <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                        MUSD debt
+                      <span className="text-[11px] font-mono uppercase text-[#525C66] block">
+                        {LANDING_CONTENT.simulator.card.metricLabels.debt}
                       </span>
                       <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
-                        ${debt.toLocaleString()}
+                        ${Math.round(activeDataPoint.debt).toLocaleString()}
                       </div>
                     </div>
 
                     <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-4">
-                      <span className="text-[11px] font-mono uppercase text-[#6F7883] block">
-                        Collateral value
+                      <span className="text-[11px] font-mono uppercase text-[#525C66] block">
+                        {LANDING_CONTENT.simulator.card.metricLabels.collateral}
                       </span>
                       <div className="text-2xl sm:text-3xl font-mono font-bold text-[#0A1521] mt-1 tracking-tight">
-                        ${collateralValue.toLocaleString()}
+                        ${Math.round(activeDataPoint.collateralValue).toLocaleString()}
                       </div>
                     </div>
                   </div>
 
-                  {/* Interactive SVG Chart matching 100/200/300% axis */}
-                  <div className="py-6">
+                  {/* Interactive SVG Chart with Two Lines (With vs Without Ballast) */}
+                  <div className="py-5 sm:py-6">
+                    {/* Screen Reader Alternative Data Table inside sr-only wrapper */}
+                    <div className="sr-only" aria-hidden="false">
+                      <table>
+                        <caption>Stress Test Simulation Data: Ratio vs Price Drawdown</caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">BTC Drop</th>
+                            <th scope="col">Without Ballast Ratio</th>
+                            <th scope="col">With Ballast Ratio</th>
+                            <th scope="col">Defended</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {simulationResults.map((r) => (
+                            <tr key={r.dropPercent}>
+                              <td>-{r.dropPercent}%</td>
+                              <td>{r.unprotectedRatio.toFixed(1)}%</td>
+                              <td>{r.protectedRatio.toFixed(1)}%</td>
+                              <td>{r.isDefended ? 'Yes' : 'No'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
                     <div className="relative h-44 sm:h-48 w-full">
                       <svg
                         viewBox="0 0 600 180"
                         className="w-full h-full overflow-visible"
                         preserveAspectRatio="none"
+                        role="region"
+                        aria-label="Interactive stress test curve chart"
                       >
                         <defs>
                           <linearGradient id="simAreaGradient" x1="0" y1="0" x2="0" y2="1">
@@ -638,23 +776,43 @@ export default function LandingPage() {
                           </linearGradient>
                         </defs>
 
-                        {/* Reference lines matching 100/200/300% */}
-                        <line x1="0" y1="140" x2="600" y2="140" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                        <text x="5" y="136" fill="#8C877D" fontSize="10" fontFamily="monospace">100%</text>
+                        {/* Reference lines matching 110% Liquidation, 150%, 200% */}
+                        {/* 110% Liquidation line (Shared MCR) */}
+                        <line
+                          x1="0"
+                          y1={chartSvgData.liquidationY}
+                          x2="600"
+                          y2={chartSvgData.liquidationY}
+                          stroke="#E04A4A"
+                          strokeWidth="1.5"
+                          strokeDasharray="4 4"
+                        />
+                        <text
+                          x="5"
+                          y={chartSvgData.liquidationY - 4}
+                          fill="#E04A4A"
+                          fontSize="9"
+                          fontFamily="monospace"
+                          fontWeight="bold"
+                        >
+                          {LANDING_CONTENT.simulator.card.chartLegend.liquidation} (MCR)
+                        </text>
 
-                        <line x1="0" y1="80" x2="600" y2="80" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                        <text x="5" y="76" fill="#8C877D" fontSize="10" fontFamily="monospace">200%</text>
+                        {/* 150% Reference */}
+                        <line x1="0" y1="75" x2="600" y2="75" stroke="#0A1521" strokeOpacity="0.08" strokeDasharray="3 3" />
+                        <text x="5" y="71" fill="#8C877D" fontSize="9" fontFamily="monospace">150% Target</text>
 
-                        <line x1="0" y1="20" x2="600" y2="20" stroke="#0A1521" strokeOpacity="0.1" strokeDasharray="3 3" />
-                        <text x="5" y="16" fill="#8C877D" fontSize="10" fontFamily="monospace">300%</text>
+                        {/* 200% Reference */}
+                        <line x1="0" y1="15" x2="600" y2="15" stroke="#0A1521" strokeOpacity="0.08" strokeDasharray="3 3" />
+                        <text x="5" y="24" fill="#8C877D" fontSize="9" fontFamily="monospace">200% Safe</text>
 
-                        {/* Vertical Indicator Line */}
-                        {chartSvgPath.points[activeChartPoint] && (
+                        {/* Vertical Indicator Line for Selected Point */}
+                        {chartSvgData.protPoints[activeChartIndex] && (
                           <line
-                            x1={chartSvgPath.points[activeChartPoint].x}
-                            y1={chartSvgPath.points[activeChartPoint].y}
-                            x2={chartSvgPath.points[activeChartPoint].x}
-                            y2="170"
+                            x1={chartSvgData.protPoints[activeChartIndex].x}
+                            y1={chartSvgData.protPoints[activeChartIndex].y}
+                            x2={chartSvgData.protPoints[activeChartIndex].x}
+                            y2="175"
                             stroke="#0A1521"
                             strokeWidth="1.5"
                             strokeDasharray="2 2"
@@ -663,134 +821,176 @@ export default function LandingPage() {
                         )}
 
                         {/* Soft Ember Area Fill */}
-                        <path d={chartSvgPath.areaPath} fill="url(#simAreaGradient)" />
+                        <path d={chartSvgData.protAreaPath} fill="url(#simAreaGradient)" />
 
-                        {/* Smooth Curve Line */}
+                        {/* Without Ballast (Muted dashed line) */}
                         <path
-                          d={chartSvgPath.linePath}
+                          d={chartSvgData.unprotPath}
+                          fill="none"
+                          stroke="#8F8A7C"
+                          strokeWidth="2"
+                          strokeDasharray="5 4"
+                          strokeLinecap="round"
+                        />
+
+                        {/* With Ballast (Solid Ember line) */}
+                        <path
+                          d={chartSvgData.protPath}
                           fill="none"
                           stroke="#CA461E"
                           strokeWidth="2.5"
                           strokeLinecap="round"
                         />
 
-                        {/* Interactive Data Points */}
-                        {chartSvgPath.points.map((pt, i) => (
+                        {/* Interactive Data Points along With Ballast curve */}
+                        {chartSvgData.protPoints.map((pt, i) => (
                           <g
                             key={i}
                             className="cursor-pointer"
-                            onClick={() => setActiveChartPoint(i)}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Step ${simulationResults[i].dropPercent}% drop: protected ratio ${simulationResults[i].protectedRatio.toFixed(1)}%`}
+                            onClick={() => {
+                              setActiveChartIndex(i);
+                              setBtcPriceDrop(simulationResults[i].dropPercent);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                setActiveChartIndex(i);
+                                setBtcPriceDrop(simulationResults[i].dropPercent);
+                              }
+                            }}
                           >
                             <circle
                               cx={pt.x}
                               cy={pt.y}
-                              r={activeChartPoint === i ? 5.5 : 4}
-                              fill={activeChartPoint === i ? '#0A1521' : '#CA461E'}
+                              r={activeChartIndex === i ? 6 : 4}
+                              fill={activeChartIndex === i ? '#0A1521' : '#CA461E'}
                               stroke="white"
-                              strokeWidth={activeChartPoint === i ? 2 : 1.5}
+                              strokeWidth={activeChartIndex === i ? 2 : 1.5}
                             />
                           </g>
                         ))}
                       </svg>
 
-                      {/* Tooltip on Active Point */}
-                      {chartSvgPath.points[activeChartPoint] && (
+                      {/* Tooltip on Active Point clamped to [12%, 88%] to avoid edge overflow */}
+                      {chartSvgData.protPoints[activeChartIndex] && (
                         <div
-                          className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-full -top-1 px-3 py-1.5 bg-white text-[#0A1521] border border-[#0A1521]/10 rounded-xl text-xs font-mono shadow-xl text-center"
+                          className="absolute pointer-events-none transform -translate-x-1/2 -translate-y-full -top-1 px-2.5 sm:px-3 py-1.5 bg-white text-[#0A1521] border border-[#0A1521]/10 rounded-xl text-xs font-mono shadow-xl text-center"
                           style={{
-                            left: `${(activeChartPoint / (chartPoints.length - 1)) * 100}%`,
+                            left: `${Math.max(12, Math.min(88, (activeChartIndex / (simulationResults.length - 1)) * 100))}%`,
                           }}
                         >
-                          <div className="font-bold text-sm text-[#0A1521]">
-                            {chartPoints[activeChartPoint].value.toFixed(1)}%
+                          <div className="font-bold text-xs sm:text-sm text-[#CA461E]">
+                            {simulationResults[activeChartIndex].protectedRatio.toFixed(1)}%
                           </div>
-                          <div className="text-[10px] text-[#6F7883]">
-                            {chartPoints[activeChartPoint].date}
+                          <div className="text-[10px] text-[#525C66]">
+                            -{simulationResults[activeChartIndex].dropPercent}% BTC drop
+                          </div>
+                          <div className="text-[9px] text-[#8F8A7C]">
+                            Unprotected: {simulationResults[activeChartIndex].unprotectedRatio.toFixed(1)}%
                           </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Month Labels */}
-                    <div className="flex justify-between text-xs font-mono text-[#6F7883] pt-3 border-t border-[#0A1521]/10">
-                      {chartPoints.map((pt, i) => (
-                        <span key={i}>{pt.label}</span>
-                      ))}
+                    {/* Chart Legend & Caption */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-3 border-t border-[#0A1521]/10 text-xs font-mono">
+                      <div className="flex items-center gap-4 text-[#525C66]">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-3 h-0.5 bg-[#CA461E] rounded-full inline-block" />
+                          <span className="text-[#0A1521] font-semibold">{LANDING_CONTENT.simulator.card.chartLegend.withBallast}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-3 h-0.5 bg-[#8F8A7C] border-b border-dashed inline-block" />
+                          <span>{LANDING_CONTENT.simulator.card.chartLegend.withoutBallast}</span>
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#525C66] text-left sm:text-right">
+                        {LANDING_CONTENT.simulator.card.caption}
+                      </div>
                     </div>
                   </div>
 
                   {/* Three Slider Tiles */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-4 border-t border-[#0A1521]/10">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5 pt-4 border-t border-[#0A1521]/10">
 
-                    {/* Slider 1: MUSD Price */}
+                    {/* Slider 1: BTC Price Change (0% to -50%) */}
                     <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
                       <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#6F7883]">MUSD Price</span>
-                        <span className="font-bold text-[#0A1521]">${musdPrice.toFixed(2)}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0.50"
-                        max="2.00"
-                        step="0.01"
-                        value={musdPrice}
-                        onChange={(e) => setMusdPrice(parseFloat(e.target.value))}
-                        style={{
-                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) ${((musdPrice - 0.5) / 1.5) * 100}%, rgba(10,21,33,0.12) 100%)`,
-                        }}
-                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
-                      />
-                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
-                        <span>$0.50</span>
-                        <span>$2.00</span>
-                      </div>
-                    </div>
-
-                    {/* Slider 2: Collateral Value */}
-                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#6F7883]">Collateral Value</span>
-                        <span className="font-bold text-[#0A1521]">${collateralValue.toLocaleString()}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="1000"
-                        max="50000"
-                        step="500"
-                        value={collateralValue}
-                        onChange={(e) => setCollateralValue(parseInt(e.target.value, 10))}
-                        style={{
-                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) ${((collateralValue - 1000) / 49000) * 100}%, rgba(10,21,33,0.12) 100%)`,
-                        }}
-                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
-                      />
-                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
-                        <span>$1k</span>
-                        <span>$50k</span>
-                      </div>
-                    </div>
-
-                    {/* Slider 3: Volatility */}
-                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#6F7883]">Volatility</span>
-                        <span className="font-bold text-[#0A1521]">± {volatilityPercent}%</span>
+                        <span className="text-[#525C66]">{LANDING_CONTENT.simulator.card.sliderLabels.drop}</span>
+                        <span className="font-bold text-[#0A1521]">-{btcPriceDrop}%</span>
                       </div>
                       <input
                         type="range"
                         min="0"
-                        max="100"
-                        step="5"
-                        value={volatilityPercent}
-                        onChange={(e) => setVolatilityPercent(parseInt(e.target.value, 10))}
+                        max="50"
+                        step="1"
+                        value={btcPriceDrop}
+                        aria-label={LANDING_CONTENT.simulator.card.sliderLabels.drop}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setBtcPriceDrop(val);
+                          setActiveChartIndex(Math.round(val / 5));
+                        }}
                         style={{
-                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${volatilityPercent}%, rgba(10,21,33,0.12) ${volatilityPercent}%, rgba(10,21,33,0.12) 100%)`,
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${(btcPriceDrop / 50) * 100}%, rgba(10,21,33,0.12) ${(btcPriceDrop / 50) * 100}%, rgba(10,21,33,0.12) 100%)`,
                         }}
                         className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
                       />
-                      <div className="flex justify-between text-[10px] font-mono text-[#6F7883]">
+                      <div className="flex justify-between text-[10px] font-mono text-[#525C66]">
                         <span>0%</span>
-                        <span>100%</span>
+                        <span>-50%</span>
+                      </div>
+                    </div>
+
+                    {/* Slider 2: Reserve MUSD */}
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#525C66]">{LANDING_CONTENT.simulator.card.sliderLabels.reserve}</span>
+                        <span className="font-bold text-[#0A1521]">${reserveMusd.toLocaleString()}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="3000"
+                        step="100"
+                        value={reserveMusd}
+                        aria-label={LANDING_CONTENT.simulator.card.sliderLabels.reserve}
+                        onChange={(e) => setReserveMusd(parseInt(e.target.value, 10))}
+                        style={{
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${(reserveMusd / 3000) * 100}%, rgba(10,21,33,0.12) ${(reserveMusd / 3000) * 100}%, rgba(10,21,33,0.12) 100%)`,
+                        }}
+                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] font-mono text-[#525C66]">
+                        <span>$0</span>
+                        <span>$3,000</span>
+                      </div>
+                    </div>
+
+                    {/* Slider 3: Trigger ratio */}
+                    <div className="bg-[#FBF7F0] border border-[#0A1521]/08 rounded-xl p-3 sm:p-3.5 space-y-1.5">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#525C66]">{LANDING_CONTENT.simulator.card.sliderLabels.trigger}</span>
+                        <span className="font-bold text-[#0A1521]">{triggerRatio}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="115"
+                        max="150"
+                        step="1"
+                        value={triggerRatio}
+                        aria-label={LANDING_CONTENT.simulator.card.sliderLabels.trigger}
+                        onChange={(e) => setTriggerRatio(parseInt(e.target.value, 10))}
+                        style={{
+                          background: `linear-gradient(to right, #CA461E 0%, #CA461E ${((triggerRatio - 115) / 35) * 100}%, rgba(10,21,33,0.12) ${((triggerRatio - 115) / 35) * 100}%, rgba(10,21,33,0.12) 100%)`,
+                        }}
+                        className="w-full accent-[#CA461E] cursor-pointer h-1.5 rounded-lg appearance-none"
+                      />
+                      <div className="flex justify-between text-[10px] font-mono text-[#525C66]">
+                        <span>115%</span>
+                        <span>150%</span>
                       </div>
                     </div>
 
@@ -810,22 +1010,22 @@ export default function LandingPage() {
         <section
           id="belief"
           ref={beliefReveal.ref}
-          className="relative py-12 sm:py-14 md:py-16 overflow-hidden bg-cover bg-right-top bg-no-repeat"
+          className="relative py-12 sm:py-16 md:py-20 overflow-hidden bg-cover bg-right-top bg-no-repeat"
           style={{ backgroundImage: "url('/assets/landing/belief-facade.webp')", backgroundPosition: 'right top' }}
         >
           {/* David Statue Cutout Anchored Directly to the Bottom-Left Border of Section */}
           <div
             ref={beliefDavidReveal.ref}
-            className={`absolute -bottom-5 sm:-bottom-6 lg:-bottom-8 left-0 z-10 w-full max-w-[380px] sm:max-w-[440px] lg:max-w-[500px] xl:max-w-[540px] shrink-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform select-none pointer-events-none ${
+            className={`absolute -bottom-5 sm:-bottom-6 lg:-bottom-8 left-0 z-10 w-full max-w-[200px] min-[400px]:max-w-[260px] sm:max-w-[380px] lg:max-w-[500px] xl:max-w-[540px] shrink-0 transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform select-none pointer-events-none opacity-40 sm:opacity-90 lg:opacity-100 ${
               beliefDavidReveal.isVisible
-                ? 'opacity-100 translate-x-0'
-                : 'opacity-0 -translate-x-32 sm:-translate-x-44 lg:-translate-x-56'
+                ? 'translate-x-0'
+                : '-translate-x-16 sm:-translate-x-32 lg:-translate-x-56'
             }`}
           >
             {/* Handwritten Tag top left */}
-            <div className="absolute -top-10 left-6 sm:left-12 lg:left-14 z-20">
+            <div className="hidden sm:block absolute -top-10 left-6 sm:left-12 lg:left-14 z-20 pointer-events-none select-none">
               <Handwritten arrow="curved-down-left" rotation="-rotate-3">
-                YOUR POSITION.{'\n'}YOUR RULES.
+                {LANDING_CONTENT.belief.note}
               </Handwritten>
             </div>
 
@@ -836,61 +1036,74 @@ export default function LandingPage() {
                 alt=""
                 width={1024}
                 height={682}
+                priority={true}
+                loading="eager"
                 className="w-full h-auto object-contain object-bottom filter drop-shadow-sm select-none"
                 aria-hidden="true"
               />
             </div>
           </div>
 
-          <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 relative z-10 flex flex-col lg:flex-row items-center justify-between min-h-[440px] lg:min-h-[480px]">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20 relative z-10 flex flex-col lg:flex-row items-center justify-between min-h-[420px] sm:min-h-[460px] lg:min-h-[480px]">
 
             {/* Left spacer for desktop so middle text is centered between David and Building Facade */}
-            <div className="hidden lg:block w-[320px] xl:w-[400px] shrink-0 pointer-events-none" />
+            <div className="hidden lg:block w-[300px] xl:w-[380px] shrink-0 pointer-events-none" />
 
             {/* Middle Part: Our Belief Narrative & Centered CTA Buttons */}
             <div
-              className={`max-w-xl px-4 sm:px-6 my-6 lg:my-0 space-y-4 sm:space-y-5 text-center transition-all duration-700 ease-out ${beliefReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-                }`}
+              className={`max-w-xl px-2 sm:px-6 my-6 lg:my-0 space-y-4 sm:space-y-5 text-center transition-all duration-700 ease-out ${
+                beliefReveal.isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+              }`}
             >
-              <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#6F7883] font-semibold block">
-                OUR BELIEF
+              <span className="text-[11px] sm:text-xs font-mono uppercase tracking-[0.2em] text-[#525C66] font-semibold block">
+                {LANDING_CONTENT.belief.eyebrow}
               </span>
 
-              <h2 className="text-3xl sm:text-4xl lg:text-[46px] font-serif font-normal text-[#0A1521] leading-[1.08] tracking-tight">
-                Better tools<br />
-                for a more stable<br />
-                ecosystem.
+              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[46px] font-serif font-normal text-[#0A1521] leading-[1.1] tracking-tight">
+                {LANDING_CONTENT.belief.headline.line1}<br />
+                {LANDING_CONTENT.belief.headline.line2}<br />
+                {LANDING_CONTENT.belief.headline.line3}
               </h2>
 
               <p className="text-sm sm:text-base font-sans text-[#2C3642] leading-relaxed max-w-md mx-auto">
-                A more informed community leads to fewer liquidations, healthier positions, and a
-                more resilient MUSD ecosystem.
+                {LANDING_CONTENT.belief.body}
               </p>
 
               {/* CTAs Centered */}
-              <div className="flex flex-wrap items-center justify-center gap-3.5 pt-1">
-                <Link href="/app/overview">
-                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm">
-                    <span>Explore Ballast</span>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+                <Link href={LANDING_CONTENT.belief.ctaPrimary.href}>
+                  <button className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-[#0A1521] text-white font-sans font-medium text-sm hover:bg-[#CA461E] transition-all duration-200 shadow-sm">
+                    <span>{LANDING_CONTENT.belief.ctaPrimary.label}</span>
                     <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                   </button>
                 </Link>
-                <Link href="/whitepaper">
-                  <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
-                    <span>Read the docs</span>
+                <a
+                  href={LANDING_CONTENT.belief.ctaSecondary.href}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <button className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
+                    <span>{LANDING_CONTENT.belief.ctaSecondary.label}</span>
+                    <ExternalLink className="w-3.5 h-3.5 stroke-[2]" />
                   </button>
-                </Link>
+                </a>
               </div>
+
+              {/* Mandatory Risk Disclosure Caption under Buttons */}
+              <p className="text-xs font-sans text-[#525C66] max-w-md mx-auto leading-normal pt-1">
+                {LANDING_CONTENT.belief.caption}
+              </p>
             </div>
 
             {/* Right Part: Angled Handwritten Stamp Tag positioned at bottom right */}
             <div
-              className={`w-full lg:w-[280px] xl:w-[340px] shrink-0 relative flex justify-center lg:justify-end pr-0 self-end transition-all duration-700 ease-out ${beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
-                }`}
+              className={`w-full lg:w-[260px] xl:w-[320px] shrink-0 relative flex justify-center lg:justify-end pr-0 self-end transition-all duration-700 ease-out ${
+                beliefReveal.isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+              }`}
             >
-              <div className="pb-3 sm:pb-4">
+              <div className="pb-3 sm:pb-4 pointer-events-none select-none">
                 <div className="inline-block px-3.5 py-1.5 border border-dashed border-[#CA461E] bg-[#F7EFE4]/95 backdrop-blur-sm rounded-sm font-hand text-xs sm:text-sm font-bold text-[#CA461E] rotate-6 select-none shadow-sm leading-tight text-center">
-                  BUILT FOR<br />A MORE STABLE<br />ECOSYSTEM
+                  {LANDING_CONTENT.belief.stamp}
                 </div>
               </div>
             </div>
@@ -903,8 +1116,8 @@ export default function LandingPage() {
       {/* SECTION 6: EDITORIAL FOOTER                                */}
       {/* ========================================================= */}
       <footer className="border-t border-[#0A1521]/10 bg-[#EFE6D9] text-[#0A1521]">
-        <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 py-16 sm:py-20">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12 items-start pb-14 border-b border-[#0A1521]/10">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20 py-12 sm:py-16 md:py-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 lg:gap-12 items-start pb-12 sm:pb-14 border-b border-[#0A1521]/10">
 
             {/* Identity & Mission */}
             <div className="md:col-span-3 space-y-4">
@@ -917,14 +1130,14 @@ export default function LandingPage() {
                 </span>
               </Link>
 
-              <p className="text-xs sm:text-sm font-sans text-[#6F7883] leading-relaxed max-w-sm">
-                Autonomous liquidation and redemption guardian for MUSD troves on Mezo.
+              <p className="text-xs sm:text-sm font-sans text-[#525C66] leading-relaxed max-w-sm">
+                {LANDING_CONTENT.footer.tagline}
               </p>
 
-              {/* Three Social Icons */}
+              {/* Verified Social Icons */}
               <div className="flex items-center gap-3 pt-1 text-[#2C3642]">
                 <a
-                  href={BRAND_URLS.x}
+                  href={LANDING_CONTENT.brand.urls.x}
                   target="_blank"
                   rel="noreferrer"
                   title="Follow on X (@Siddhu_3116)"
@@ -933,15 +1146,16 @@ export default function LandingPage() {
                   <span className="font-mono text-xs font-bold">X</span>
                 </a>
                 <a
-                  href="https://discord.com"
+                  href={LANDING_CONTENT.brand.urls.discord}
                   target="_blank"
                   rel="noreferrer"
+                  title="Join Mezo Discord"
                   className="w-8 h-8 rounded-full border border-[#0A1521]/15 flex items-center justify-center hover:text-[#CA461E] hover:border-[#CA461E] transition-colors"
                 >
                   <span className="font-mono text-xs font-bold">⚑</span>
                 </a>
                 <a
-                  href="https://github.com/SIDDHUX9/BALLAST"
+                  href={LANDING_CONTENT.brand.urls.github}
                   target="_blank"
                   rel="noreferrer"
                   title="GitHub Repository"
@@ -957,27 +1171,22 @@ export default function LandingPage() {
               <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521] block mb-1">
                 Protocol
               </span>
-              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
-                <li>
-                  <Link href="/whitepaper" className="hover:text-[#0A1521] transition-colors">
-                    Whitepaper
-                  </Link>
-                </li>
-                <li>
-                  <a href="#simulator" className="hover:text-[#0A1521] transition-colors">
-                    Risk framework
-                  </a>
-                </li>
-                <li>
-                  <Link href="/app" className="hover:text-[#0A1521] transition-colors">
-                    Borrower App
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/app/activity" className="hover:text-[#0A1521] transition-colors">
-                    Changelog
-                  </Link>
-                </li>
+              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#525C66]">
+                {LANDING_CONTENT.footer.protocolLinks.map((item) => (
+                  <li key={item.label}>
+                    <a
+                      href={item.href}
+                      target={item.href.startsWith('http') ? '_blank' : undefined}
+                      rel={item.href.startsWith('http') ? 'noreferrer' : undefined}
+                      className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
+                    >
+                      <span>{item.label}</span>
+                      {item.href.startsWith('http') && (
+                        <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                      )}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
@@ -991,7 +1200,7 @@ export default function LandingPage() {
                   31611
                 </span>
               </div>
-              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
+              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#525C66]">
                 <li>
                   <a
                     href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastFactory}`}
@@ -1003,7 +1212,7 @@ export default function LandingPage() {
                     <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
                       0x8d5b...cd33
                     </span>
-                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                    <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
                   </a>
                 </li>
                 <li>
@@ -1017,7 +1226,7 @@ export default function LandingPage() {
                     <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
                       0x8158...a4bc
                     </span>
-                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                    <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
                   </a>
                 </li>
                 <li>
@@ -1031,7 +1240,7 @@ export default function LandingPage() {
                     <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
                       0xA506...5D5A
                     </span>
-                    <ExternalLink className="w-3 h-3 text-[#6F7883] group-hover/c:text-[#CA461E]" />
+                    <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
                   </a>
                 </li>
               </ul>
@@ -1042,62 +1251,45 @@ export default function LandingPage() {
               <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521] block mb-1">
                 Community
               </span>
-              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#6F7883]">
-                <li>
-                  <a
-                    href={BRAND_URLS.x}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
-                  >
-                    <span>X (@Siddhu_3116)</span>
-                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/SIDDHUX9/BALLAST"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
-                  >
-                    <span>GitHub</span>
-                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={BRAND_URLS.mezoDocs}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
-                  >
-                    <span>Mezo Docs</span>
-                    <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                </li>
+              <ul className="space-y-2 text-xs sm:text-sm font-sans text-[#525C66]">
+                {LANDING_CONTENT.footer.communityLinks.map((item) => (
+                  <li key={item.label}>
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-[#0A1521] transition-colors flex items-center gap-1 group"
+                    >
+                      <span>{item.label}</span>
+                      <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
-            {/* Newsletter Input with Circle Arrow Button */}
-            <div className="md:col-span-2 space-y-3">
-              <div className="flex items-center rounded-xl bg-white border border-[#0A1521]/15 p-1.5 pl-3 shadow-sm">
-                <input
-                  type="email"
-                  placeholder="Get updates"
-                  className="bg-transparent text-xs font-sans text-[#0A1521] placeholder-[#6F7883] focus:outline-none w-full min-w-0"
-                />
-                <button
-                  type="button"
-                  aria-label="Submit newsletter subscription"
-                  className="w-7 h-7 rounded-full bg-[#0A1521] text-white flex items-center justify-center shrink-0 hover:bg-[#CA461E] transition-colors ml-1"
-                >
-                  <ArrowRight className="w-3.5 h-3.5 stroke-[2.2]" />
-                </button>
-              </div>
-              <p className="text-[11px] font-sans text-[#6F7883]">
-                No noise. Just updates.
-              </p>
+            {/* Action Widget: Telegram Bot Alerts (replaces unbacked newsletter email capture) */}
+            <div className="md:col-span-2 space-y-2">
+              <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#0A1521] block mb-1">
+                Alerts
+              </span>
+              <a
+                href={LANDING_CONTENT.footer.alertsWidget.botUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between rounded-xl bg-white border border-[#0A1521]/15 p-2 px-3 shadow-xs hover:border-[#CA461E] hover:text-[#CA461E] transition-all group"
+              >
+                <span className="text-xs font-sans font-medium text-[#0A1521] group-hover:text-[#CA461E] leading-tight">
+                  {LANDING_CONTENT.footer.alertsWidget.buttonLabel}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[2.2] text-[#0A1521] group-hover:text-[#CA461E] group-hover:translate-x-0.5 transition-transform shrink-0 ml-1.5" />
+              </a>
+              <Link
+                href={LANDING_CONTENT.footer.alertsWidget.appAlertsUrl}
+                className="text-[11px] font-sans text-[#525C66] hover:text-[#0A1521] block transition-colors leading-tight"
+              >
+                {LANDING_CONTENT.footer.alertsWidget.caption}
+              </Link>
             </div>
 
           </div>
@@ -1110,15 +1302,15 @@ export default function LandingPage() {
                 <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#0A1521]">
                   Verified On-Chain Contracts
                 </span>
-                <span className="text-[11px] font-mono text-[#6F7883]">
+                <span className="text-[11px] font-mono text-[#525C66]">
                   (Mezo Matsnet Testnet &middot; Chain ID 31611)
                 </span>
               </div>
               <a
-                href={BRAND_URLS.mezoExplorer}
+                href={LANDING_CONTENT.brand.urls.mezoExplorer}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#6F7883] hover:text-[#CA461E] transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs font-mono text-[#525C66] hover:text-[#CA461E] transition-colors"
               >
                 <span>Mezo Blockscout Explorer</span>
                 <ExternalLink className="w-3 h-3" />
@@ -1137,7 +1329,7 @@ export default function LandingPage() {
                       Proxy Factory
                     </span>
                   </div>
-                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                  <p className="text-xs font-sans text-[#525C66] mb-2.5">
                     Deterministic minimal proxy factory for autonomous borrower vaults.
                   </p>
                 </div>
@@ -1150,7 +1342,7 @@ export default function LandingPage() {
                       href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/BallastFactory.sol"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                      className="text-[11px] font-mono text-[#525C66] hover:text-[#0A1521] transition-colors"
                     >
                       Source
                     </a>
@@ -1178,7 +1370,7 @@ export default function LandingPage() {
                       Master Impl
                     </span>
                   </div>
-                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                  <p className="text-xs font-sans text-[#525C66] mb-2.5">
                     Master defense execution logic, reserve accounting, and keeper entrypoint.
                   </p>
                 </div>
@@ -1191,7 +1383,7 @@ export default function LandingPage() {
                       href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/BallastVault.sol"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                      className="text-[11px] font-mono text-[#525C66] hover:text-[#0A1521] transition-colors"
                     >
                       Source
                     </a>
@@ -1219,7 +1411,7 @@ export default function LandingPage() {
                       Active Vault
                     </span>
                   </div>
-                  <p className="text-xs font-sans text-[#6F7883] mb-2.5">
+                  <p className="text-xs font-sans text-[#525C66] mb-2.5">
                     Live borrower defense vault clone on Matsnet with pre-funded reserves.
                   </p>
                 </div>
@@ -1232,7 +1424,7 @@ export default function LandingPage() {
                       href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/libraries/BallastMath.sol"
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] font-mono text-[#6F7883] hover:text-[#0A1521] transition-colors"
+                      className="text-[11px] font-mono text-[#525C66] hover:text-[#0A1521] transition-colors"
                     >
                       Math Lib
                     </a>
@@ -1253,14 +1445,14 @@ export default function LandingPage() {
 
           {/* Bottom Bar: Copyright & Architectural Florence Duomo Sketch */}
           <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
-            <span className="text-xs sm:text-sm font-mono text-[#6F7883]">
-              &copy; 2026 Ballast. All rights reserved.
+            <span className="text-xs sm:text-sm font-mono text-[#525C66]">
+              {LANDING_CONTENT.footer.copyright}
             </span>
 
             {/* Handwritten Note + Florence Cathedral Line Art Sketch */}
             <div className="flex items-center gap-5 select-none">
               <Handwritten underline rotation="-rotate-3">
-                STAY AHEAD.{'\n'}STAY IN CONTROL.
+                {LANDING_CONTENT.footer.note}
               </Handwritten>
 
               <div className="w-28 sm:w-36 h-auto opacity-80 select-none">

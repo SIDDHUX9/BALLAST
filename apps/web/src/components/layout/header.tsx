@@ -1,11 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { BRAND_NAME } from '@ballast/shared';
+import { LANDING_CONTENT } from '../../content/landing';
 import { useTheme } from '../theme-provider';
-import { Sun, Moon, Anchor } from 'lucide-react';
+import { Sun, Moon, Anchor, Menu, X } from 'lucide-react';
 import { WalletButton } from '../wallet/wallet-button';
 import { NotificationCenter } from '../notifications/notification-center';
 
@@ -17,6 +18,7 @@ export function Header({ walletSlot }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const isApp = pathname?.startsWith('/app');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const appNavItems = [
     { href: '/app/overview', label: 'Overview' },
@@ -28,23 +30,18 @@ export function Header({ walletSlot }: HeaderProps) {
     { href: '/app/activity', label: 'Activity' },
   ];
 
-  const landingNavItems = [
-    { href: '#how-it-works', label: 'Protocol' },
-    { href: '#simulator', label: 'Risk' },
-    { href: '/whitepaper', label: 'Whitepaper' },
-    { href: '#belief', label: 'About' },
-  ];
+  const landingNavItems = LANDING_CONTENT.header.navItems;
 
   return (
     <header className={`border-b border-[#E8E2D5]/60 ${isApp ? 'bg-paper/95' : 'bg-[#F5F1E8]/95'} backdrop-blur-sm sticky top-0 z-40 transition-colors`}>
-      <div className="w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 xl:px-20 h-20 flex items-center justify-between gap-4">
+      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-16 xl:px-20 h-16 sm:h-20 flex items-center justify-between gap-3">
         {/* Brand Wordmark */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 group focus-visible:outline-none">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group focus-visible:outline-none">
             <span className="text-[#0A1521] group-hover:text-[#CA461E] transition-colors">
-              <Anchor className="w-5 h-5 stroke-[2.2]" />
+              <Anchor className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
             </span>
-            <span className="font-serif font-bold text-lg text-[#0A1521] tracking-[0.18em] uppercase leading-none group-hover:text-[#CA461E] transition-colors">
+            <span className="font-serif font-bold text-base sm:text-lg text-[#0A1521] tracking-[0.16em] sm:tracking-[0.18em] uppercase leading-none group-hover:text-[#CA461E] transition-colors">
               {BRAND_NAME}
             </span>
           </Link>
@@ -60,7 +57,7 @@ export function Header({ walletSlot }: HeaderProps) {
           )}
         </div>
 
-        {/* Navigation */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-7 text-sm font-sans font-medium">
           {isApp
             ? appNavItems.map((item) => {
@@ -90,7 +87,7 @@ export function Header({ walletSlot }: HeaderProps) {
         </nav>
 
         {/* Action Controls & Wallet Slot */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Theme Toggle Button (App only) */}
           {isApp && (
             <button
@@ -116,15 +113,61 @@ export function Header({ walletSlot }: HeaderProps) {
               <WalletButton />
             </>
           ) : (
-            <Link href="/app/overview">
-              <button className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-xs hover:bg-[#C84E29] transition-all duration-200 shadow-sm hover:shadow">
-                <span>Launch App</span>
+            <Link href={LANDING_CONTENT.header.launchButton.href}>
+              <button className="inline-flex items-center gap-1 sm:gap-1.5 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#14130F] text-white font-sans font-medium text-xs hover:bg-[#C84E29] transition-all duration-200 shadow-sm hover:shadow">
+                <span>{LANDING_CONTENT.header.launchButton.label}</span>
                 <span className="text-xs font-mono">↗</span>
               </button>
             </Link>
           )}
+
+          {/* Mobile Menu Hamburger Toggle (Non-App / Landing) */}
+          {!isApp && (
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="md:hidden w-8 h-8 flex items-center justify-center rounded-full border border-[#0A1521]/15 text-[#0A1521] hover:text-[#CA461E] hover:border-[#CA461E] transition-colors focus-visible:outline-none"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-4 h-4 stroke-[2]" />
+              ) : (
+                <Menu className="w-4 h-4 stroke-[2]" />
+              )}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {!isApp && mobileMenuOpen && (
+        <nav
+          className="md:hidden border-t border-[#E8E2D5] bg-[#F5F1E8] px-4 py-3 space-y-2 animate-fadeIn"
+          aria-label="Mobile Navigation"
+        >
+          {landingNavItems.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-2 px-3 text-sm font-sans font-medium text-[#0A1521] hover:bg-[#0A1521]/05 rounded-lg transition-colors"
+            >
+              {item.label}
+            </a>
+          ))}
+          <div className="pt-2 border-t border-[#0A1521]/10">
+            <Link
+              href={LANDING_CONTENT.header.launchButton.href}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-between w-full py-2.5 px-3 rounded-xl bg-[#0A1521] text-white text-xs font-medium font-sans hover:bg-[#C84E29] transition-colors"
+            >
+              <span>{LANDING_CONTENT.header.launchButton.label}</span>
+              <span className="font-mono">↗</span>
+            </Link>
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

@@ -86,9 +86,20 @@ check('danger', darkTokens.danger, 'ground', darkTokens.ground);
 check('ember', darkTokens.ember, 'ground', darkTokens.ground);
 check('ground', darkTokens.ground, 'ember (button fg)', darkTokens.ember);
 
+console.log('\n-- Rust Simulator Panel (Landing Page Section 4) --');
+const rustBg = '#C1411C';
+const darkRustBg = '#A83514';
+check('Eyebrow text', '#FFFFFF', 'Rust panel bg', rustBg, 4.5);
+check('Headline (Large)', '#FFFFFF', 'Rust panel bg', rustBg, 3.0, true);
+check('Body paragraph text', '#FFFFFF', 'Rust panel bg', rustBg, 4.5);
+check('Eyebrow text', '#FFFFFF', 'Dark rust shadow bg', darkRustBg, 4.5);
+check('Body paragraph text', '#FFFFFF', 'Dark rust shadow bg', darkRustBg, 4.5);
+check('Button text', '#FFFFFF', 'Button bg ink', '#0A1521', 4.5);
+check('Card heading ink', '#0A1521', 'Card white bg', '#FFFFFF', 4.5);
+
 if (failed) {
   console.error('\nContrast check failed for one or more pairs!');
   process.exit(1);
 } else {
-  console.log('\nAll token pairs passed WCAG AA requirements!');
+  console.log('\nAll token pairs and Rust panel text passed WCAG AA requirements!');
 }
