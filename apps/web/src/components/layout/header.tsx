@@ -2,11 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { BRAND_NAME } from '@ballast/shared';
 import { LANDING_CONTENT } from '../../content/landing';
 import { useTheme } from '../theme-provider';
-import { Sun, Moon, Anchor, Menu, X } from 'lucide-react';
+import { Sun, Moon, Menu, X } from 'lucide-react';
 import { WalletButton } from '../wallet/wallet-button';
 import { NotificationCenter } from '../notifications/notification-center';
 
@@ -38,8 +39,15 @@ export function Header({ walletSlot }: HeaderProps) {
         {/* Brand Wordmark */}
         <div className="flex items-center gap-4 sm:gap-6">
           <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group focus-visible:outline-none">
-            <span className="text-[#0A1521] group-hover:text-[#CA461E] transition-colors">
-              <Anchor className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
+            <span className="relative flex items-center justify-center shrink-0">
+              <Image
+                src="/logo.png"
+                alt="Ballast Logo"
+                width={32}
+                height={32}
+                priority
+                className="w-6 h-6 sm:w-7 sm:h-7 object-contain group-hover:scale-105 transition-transform"
+              />
             </span>
             <span className="font-serif font-bold text-base sm:text-lg text-[#0A1521] tracking-[0.16em] sm:tracking-[0.18em] uppercase leading-none group-hover:text-[#CA461E] transition-colors">
               {BRAND_NAME}

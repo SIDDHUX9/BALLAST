@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BRAND_NAME,
   BRAND_TAGLINE,
@@ -20,6 +21,12 @@ export function Footer() {
       name: 'BallastFactory',
       role: 'Deterministic Proxy Factory',
       address: MATSNET_DEPLOYMENT.ballastFactory,
+      isMezo: false,
+    },
+    {
+      name: 'BallastVault (Active Vault)',
+      role: 'Primary Active Defense Vault',
+      address: MATSNET_DEPLOYMENT.sampleVault,
       isMezo: false,
     },
     {
@@ -61,7 +68,14 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
           {/* Col 1: Identity */}
           <div className="md:col-span-2 flex flex-col gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/logo.png"
+                alt="Ballast Logo"
+                width={24}
+                height={24}
+                className="w-5 h-5 object-contain"
+              />
               <span className="font-serif font-bold text-base text-ink tracking-tight">
                 {BRAND_NAME}
               </span>

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/logo.png" alt="Ballast Logo" width="150" height="150" />
+</p>
+
 # Ballast — Autonomous Liquidation Guardian for MUSD Troves
 
 [![Mezo Matsnet](https://img.shields.io/badge/Network-Mezo%20Matsnet%20(31611)-E16839.svg)](https://explorer.test.mezo.org)

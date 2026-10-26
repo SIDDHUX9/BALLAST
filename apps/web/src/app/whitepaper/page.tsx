@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BRAND_NAME,
   BRAND_URLS,
@@ -57,6 +58,24 @@ export default function WhitepaperPage() {
       {/* Hero Header */}
       <div className="border-b border-hairline bg-paper-surface/60 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 md:py-16">
+          {/* Logo & Category Badge */}
+          <div className="flex items-center gap-3.5 mb-6">
+            <Image
+              src="/logo.png"
+              alt="Ballast Logo"
+              width={48}
+              height={48}
+              priority
+              className="w-12 h-12 object-contain drop-shadow-sm"
+            />
+            <div>
+              <span className="font-serif font-bold text-xl text-ink tracking-wider uppercase block leading-none">
+                {BRAND_NAME}
+              </span>
+              <span className="text-[11px] font-mono text-ink-muted">AUTONOMOUS TROVE GUARDIAN</span>
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium bg-ember/10 text-ember border border-ember/20">
               <BookOpen className="w-3.5 h-3.5" />

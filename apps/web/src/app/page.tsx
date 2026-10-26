@@ -12,7 +12,6 @@ import {
 } from '@ballast/shared';
 import { LANDING_CONTENT } from '../content/landing';
 import {
-  Anchor,
   ArrowRight,
   ArrowUpRight,
   ShieldCheck,
@@ -1122,8 +1121,14 @@ export default function LandingPage() {
             {/* Identity & Mission */}
             <div className="md:col-span-3 space-y-4">
               <Link href="/" className="flex items-center gap-2.5 group">
-                <span className="text-[#0A1521] group-hover:text-[#CA461E] transition-colors">
-                  <Anchor className="w-5 h-5 stroke-[2.2]" />
+                <span className="relative flex items-center justify-center shrink-0">
+                  <Image
+                    src="/logo.png"
+                    alt="Ballast Logo"
+                    width={32}
+                    height={32}
+                    className="w-7 h-7 object-contain group-hover:scale-105 transition-transform"
+                  />
                 </span>
                 <span className="font-serif font-bold text-lg text-[#0A1521] tracking-[0.18em] uppercase leading-none group-hover:text-[#CA461E] transition-colors">
                   {BRAND_NAME}
