@@ -130,8 +130,8 @@ All Ballast core contracts are deployed, active, and verified on **Mezo Matsnet 
 | Contract Name | Role / Purpose | Deployed Address | Explorer Link | Source File |
 | :--- | :--- | :--- | :--- | :--- |
 | **`BallastFactory`** | Deterministic minimal proxy factory | `0x8d5b392839300b487addeecc35f5bc534111cd33` | [View on Explorer](https://explorer.test.mezo.org/address/0x8d5b392839300b487addeecc35f5bc534111cd33) | [`BallastFactory.sol`](./packages/contracts/src/BallastFactory.sol) |
+| **`BallastVault`** *(Active Vault &bull; Most Active)* | Primary live borrower defense vault (highest transaction volume on Matsnet) | `0xA506b2250B85A0c7dE80DD313A0Db9cD8a655D5A` | [View on Explorer](https://explorer.test.mezo.org/address/0xA506b2250B85A0c7dE80DD313A0Db9cD8a655D5A) | [Verified Tx](https://explorer.test.mezo.org/tx/0xa668c363368da7af882524f60198bda8051fd6940f95a1e7dab4f5f8d80d72ca) |
 | **`BallastVault`** *(Logic)* | Master implementation for defense logic & reserves | `0x815893bad1708a201eeeaf226eed576a7ffea4bc` | [View on Explorer](https://explorer.test.mezo.org/address/0x815893bad1708a201eeeaf226eed576a7ffea4bc) | [`BallastVault.sol`](./packages/contracts/src/BallastVault.sol) |
-| **`BallastVault`** *(Clone)* | Sample verified active borrower vault | `0xA506b2250B85A0c7dE80DD313A0Db9cD8a655D5A` | [View on Explorer](https://explorer.test.mezo.org/address/0xA506b2250B85A0c7dE80DD313A0Db9cD8a655D5A) | [Clone Tx](https://explorer.test.mezo.org/tx/0xa668c363368da7af882524f60198bda8051fd6940f95a1e7dab4f5f8d80d72ca) |
 | **`BallastMath`** | Pure 1e18 fixed-point math library | *Linked Library* | [View Contract](#mathematical-formulation) | [`BallastMath.sol`](./packages/contracts/src/libraries/BallastMath.sol) |
 
 ### Mezo Protocol Canonical Dependencies

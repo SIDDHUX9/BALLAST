@@ -1217,6 +1217,23 @@ export default function LandingPage() {
                 </li>
                 <li>
                   <a
+                    href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-[#0A1521] transition-colors inline-flex items-center gap-1.5 group/c"
+                  >
+                    <span>BallastVault (Active Vault)</span>
+                    <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-[#CA461E]/15 text-[#CA461E] border border-[#CA461E]/30">
+                      Most Active
+                    </span>
+                    <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
+                      0xA506...5D5A
+                    </span>
+                    <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
+                  </a>
+                </li>
+                <li>
+                  <a
                     href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastVaultImplementation}`}
                     target="_blank"
                     rel="noreferrer"
@@ -1225,20 +1242,6 @@ export default function LandingPage() {
                     <span>BallastVault (Logic)</span>
                     <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
                       0x8158...a4bc
-                    </span>
-                    <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-[#0A1521] transition-colors inline-flex items-center gap-1 group/c"
-                  >
-                    <span>BallastVault (Clone)</span>
-                    <span className="font-mono text-[11px] text-[#CA461E] group-hover/c:underline">
-                      0xA506...5D5A
                     </span>
                     <ExternalLink className="w-3 h-3 text-[#525C66] group-hover/c:text-[#CA461E]" />
                   </a>
@@ -1359,7 +1362,48 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Contract 2: BallastVault Implementation */}
+              {/* Contract 2: Active Borrower Vault (Most Active) */}
+              <div className="p-3.5 rounded-xl border border-[#CA461E]/30 bg-white/85 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E] transition-all ring-1 ring-[#CA461E]/15">
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <span className="font-mono text-xs font-bold text-[#0A1521] uppercase tracking-wide">
+                      BallastVault (Active Vault)
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#CA461E]/15 text-[#CA461E] font-semibold border border-[#CA461E]/30 flex items-center gap-1">
+                      ★ Most Active
+                    </span>
+                  </div>
+                  <p className="text-xs font-sans text-[#525C66] mb-2.5">
+                    Primary live borrower defense vault on Matsnet with highest transaction volume and active pre-funded reserves.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-[#0A1521]/08 flex items-center justify-between">
+                  <span className="font-mono text-[11px] text-[#0A1521]/80">
+                    0xA506...5D5A
+                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <a
+                      href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/libraries/BallastMath.sol"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-mono text-[#525C66] hover:text-[#0A1521] transition-colors"
+                    >
+                      Math Lib
+                    </a>
+                    <a
+                      href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
+                    >
+                      <span>View</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contract 3: BallastVault Implementation */}
               <div className="p-3.5 rounded-xl border border-[#0A1521]/10 bg-white/70 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E]/40 transition-all">
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -1389,47 +1433,6 @@ export default function LandingPage() {
                     </a>
                     <a
                       href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.ballastVaultImplementation}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
-                    >
-                      <span>View</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contract 3: Active Borrower Vault Clone */}
-              <div className="p-3.5 rounded-xl border border-[#0A1521]/10 bg-white/70 backdrop-blur-sm shadow-xs flex flex-col justify-between hover:border-[#CA461E]/40 transition-all">
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="font-mono text-xs font-bold text-[#0A1521] uppercase tracking-wide">
-                      BallastVault (Clone)
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#0A1521]/10 text-[#0A1521] font-semibold">
-                      Active Vault
-                    </span>
-                  </div>
-                  <p className="text-xs font-sans text-[#525C66] mb-2.5">
-                    Live borrower defense vault clone on Matsnet with pre-funded reserves.
-                  </p>
-                </div>
-                <div className="pt-2 border-t border-[#0A1521]/08 flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-[#0A1521]/80">
-                    0xA506...5D5A
-                  </span>
-                  <div className="flex items-center gap-2.5">
-                    <a
-                      href="https://github.com/SIDDHUX9/BALLAST/blob/main/packages/contracts/src/libraries/BallastMath.sol"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[11px] font-mono text-[#525C66] hover:text-[#0A1521] transition-colors"
-                    >
-                      Math Lib
-                    </a>
-                    <a
-                      href={`https://explorer.test.mezo.org/address/${MATSNET_DEPLOYMENT.sampleVault}`}
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 text-[11px] font-mono font-medium text-[#CA461E] hover:underline"
