@@ -1076,16 +1076,12 @@ export default function LandingPage() {
                     <ArrowRight className="w-4 h-4 stroke-[2.2]" />
                   </button>
                 </Link>
-                <a
-                  href={LANDING_CONTENT.belief.ctaSecondary.href}
-                  target="_blank"
-                  rel="noreferrer"
-                >
+                <Link href={LANDING_CONTENT.belief.ctaSecondary.href}>
                   <button className="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full border border-[#0A1521]/20 bg-transparent text-[#0A1521] font-sans font-medium text-sm hover:border-[#0A1521] hover:text-[#CA461E] transition-all duration-200">
                     <span>{LANDING_CONTENT.belief.ctaSecondary.label}</span>
-                    <ExternalLink className="w-3.5 h-3.5 stroke-[2]" />
+                    <ArrowRight className="w-3.5 h-3.5 stroke-[2]" />
                   </button>
-                </a>
+                </Link>
               </div>
 
               {/* Mandatory Risk Disclosure Caption under Buttons */}
@@ -1292,12 +1288,21 @@ export default function LandingPage() {
                 </span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[2.2] text-[#0A1521] group-hover:text-[#CA461E] group-hover:translate-x-0.5 transition-transform shrink-0 ml-1.5" />
               </a>
-              <Link
-                href={LANDING_CONTENT.footer.alertsWidget.appAlertsUrl}
-                className="text-[11px] font-sans text-[#525C66] hover:text-[#0A1521] block transition-colors leading-tight"
-              >
-                {LANDING_CONTENT.footer.alertsWidget.caption}
-              </Link>
+              <div className="flex items-center gap-2 pt-0.5">
+                <Link
+                  href={LANDING_CONTENT.footer.alertsWidget.appAlertsUrl}
+                  className="text-[11px] font-sans text-[#525C66] hover:text-[#0A1521] transition-colors leading-tight"
+                >
+                  {LANDING_CONTENT.footer.alertsWidget.caption}
+                </Link>
+                <span className="text-[#525C66]/40 text-[10px]">&middot;</span>
+                <Link
+                  href="/telegram"
+                  className="text-[11px] font-sans text-[#CA461E] hover:underline transition-colors leading-tight font-medium"
+                >
+                  How it works &amp; setup
+                </Link>
+              </div>
             </div>
 
           </div>

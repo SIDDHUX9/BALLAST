@@ -147,10 +147,11 @@ export const LANDING_CONTENT: LandingContent = {
   },
   header: {
     navItems: [
-      { label: 'How it works', href: '#how-it-works' },
-      { label: 'Stress test', href: '#simulator' },
-      { label: 'Security', href: '#belief' },
-      { label: 'Docs', href: BRAND_URLS.mezoDocs },
+      { label: 'How it works', href: '/#how-it-works' },
+      { label: 'Stress test', href: '/#simulator' },
+      { label: 'Security', href: '/#belief' },
+      { label: 'WHITEPAPER', href: '/whitepaper' },
+      { label: 'Telegram', href: '/telegram' },
     ] as const,
     launchButton: {
       label: 'Launch App',
@@ -293,8 +294,8 @@ export const LANDING_CONTENT: LandingContent = {
       href: '/app',
     },
     ctaSecondary: {
-      label: 'Read the docs',
-      href: BRAND_URLS.mezoDocs,
+      label: 'Read WHITEPAPER',
+      href: '/whitepaper',
     },
     caption:
       'Ballast lowers liquidation risk; it cannot remove it. Reserves can run out and prices can gap. Testnet prototype, unaudited.',
@@ -310,7 +311,8 @@ export const LANDING_CONTENT: LandingContent = {
       appAlertsUrl: '/app/alerts',
     },
     protocolLinks: [
-      { label: 'Docs', href: BRAND_URLS.mezoDocs },
+      { label: 'WHITEPAPER', href: '/whitepaper' },
+      { label: 'Telegram Alerts', href: '/telegram' },
       { label: 'GitHub', href: BRAND_URLS.github },
       { label: 'Contracts', href: BRAND_URLS.factoryExplorer },
       { label: 'Security notes', href: BRAND_URLS.securityNotes },

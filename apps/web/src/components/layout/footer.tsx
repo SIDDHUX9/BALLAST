@@ -143,8 +143,14 @@ export function Footer() {
               href="/whitepaper"
               className="text-xs font-mono text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
             >
-              <span>Whitepaper & Spec</span>
+              <span>WHITEPAPER</span>
               <BookOpen className="w-3 h-3 stroke-[1.5]" />
+            </Link>
+            <Link
+              href="/telegram"
+              className="text-xs font-mono text-ink-muted hover:text-ink flex items-center gap-1 transition-colors"
+            >
+              <span>Telegram Alerts</span>
             </Link>
             <Link
               href="/app"

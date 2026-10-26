@@ -66,21 +66,15 @@ async function main() {
         }
       } else if (href.startsWith('/')) {
         // 3. Internal route: verify it is not a forbidden or dead path
-        if (href === '/whitepaper') {
-          status = 'FAIL';
-          reason = 'Dead link: whitepaper does not exist';
-        } else {
-          // Check route existence on localhost
-          try {
-            const resp = await page.request.get(`http://localhost:3000${href}`);
-            if (resp.status() >= 400) {
-              status = 'FAIL';
-              reason = `Internal route returned HTTP ${resp.status()}`;
-            }
-          } catch (err: unknown) {
+        try {
+          const resp = await page.request.get(`http://localhost:3000${href}`);
+          if (resp.status() >= 400) {
             status = 'FAIL';
-            reason = `Internal request error: ${(err as Error).message}`;
+            reason = `Internal route returned HTTP ${resp.status()}`;
           }
+        } catch (err: unknown) {
+          status = 'FAIL';
+          reason = `Internal request error: ${(err as Error).message}`;
         }
       } else if (href.startsWith('http://') || href.startsWith('https://')) {
         // 4. External URL: verify format and check against known destinations

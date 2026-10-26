@@ -83,15 +83,26 @@ export function Header({ walletSlot }: HeaderProps) {
                 </Link>
               );
             })
-            : landingNavItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
-              >
-                {item.label}
-              </a>
-            ))}
+            : landingNavItems.map((item) => {
+              const isInternalRoute = item.href.startsWith('/') && !item.href.includes('#');
+              return isInternalRoute ? (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="text-[#4A463F] hover:text-[#14130F] transition-colors font-medium text-sm"
+                >
+                  {item.label}
+                </a>
+              );
+            })}
         </nav>
 
         {/* Action Controls & Wallet Slot */}
@@ -154,16 +165,28 @@ export function Header({ walletSlot }: HeaderProps) {
           className="md:hidden border-t border-[#E8E2D5] bg-[#F5F1E8] px-4 py-3 space-y-2 animate-fadeIn"
           aria-label="Mobile Navigation"
         >
-          {landingNavItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 px-3 text-sm font-sans font-medium text-[#0A1521] hover:bg-[#0A1521]/05 rounded-lg transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
+          {landingNavItems.map((item) => {
+            const isInternalRoute = item.href.startsWith('/') && !item.href.includes('#');
+            return isInternalRoute ? (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 px-3 text-sm font-sans font-medium text-[#0A1521] hover:bg-[#0A1521]/05 rounded-lg transition-colors"
+              >
+                {item.label}
+              </Link>
+            ) : (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2 px-3 text-sm font-sans font-medium text-[#0A1521] hover:bg-[#0A1521]/05 rounded-lg transition-colors"
+              >
+                {item.label}
+              </a>
+            );
+          })}
           <div className="pt-2 border-t border-[#0A1521]/10">
             <Link
               href={LANDING_CONTENT.header.launchButton.href}
